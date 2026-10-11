@@ -1005,9 +1005,10 @@ def render_menu_answer(results: list[dict]) -> str:
                 groups.add(row["group_name"])
         if not meals:
             meal = (result.get("meal_type") or "meals").replace("_", " ").lower()
-            sections.append(f"I don't have the {meal} menu for {result['day_name']} yet.")
+            sections.append(f"Sorry, I don't have the {meal} menu for {result['day_name']} yet.")
             continue
-        lines = [f"Here's what's on the menu for **{result['day_name']}**:", ""]
+        warmth = " 🍽️" if len(sections) < 2 else ""
+        lines = [f"Here's what's on the menu for **{result['day_name']}**!{warmth}", ""]
         for meal, menus in meals.items():
             for items, groups in menus.items():
                 label = md_escape(meal.replace("_", " ").title())
@@ -1044,8 +1045,8 @@ def render_academic_timetable(result: dict) -> str:
             label = f"Block {row['block_code']}" if kind == "BLOCK" else labels[kind]
             classes.append(line(row, label))
     day = result["day_name"]
-    text = (f"Here's the class timetable for **{day}**:\n\n" + "\n".join(classes)
-            if classes else f"I don't have the class timetable for {day} yet.")
+    text = (f"Here's the class timetable for **{day}**! 📚\n\n" + "\n".join(classes)
+            if classes else f"Sorry, I don't have the class timetable for {day} yet.")
     if events:
         text += "\n\n**Events**\n" + "\n".join(events)
     return text
