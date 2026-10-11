@@ -183,7 +183,7 @@
     background: var(--bg-3); color: var(--text);
   }
   .bubble-bot {
-    max-width: 100%; background: none; padding: 0; border-radius: 0;
+    width: 100%; max-width: 70ch; background: none; padding: 0; border-radius: 0;
     line-height: 1.7; white-space: normal;
   }
   .bot-col { display: flex; flex-direction: column; align-items: flex-start; max-width: 100%; gap: 6px; }
@@ -196,7 +196,10 @@
   .bubble-bot h1, .bubble-bot h2, .bubble-bot h3 { font-weight: 600; line-height: 1.3; margin: 18px 0 8px; }
   .bubble-bot h1 { font-size: 19px; } .bubble-bot h2 { font-size: 17px; } .bubble-bot h3 { font-size: 15px; }
   .bubble-bot ul, .bubble-bot ol { margin: 0 0 12px; padding-left: 22px; }
-  .bubble-bot li { margin: 3px 0; }
+  .bubble-bot li { margin: 7px 0; padding-left: 2px; }
+  .bubble-bot li > p { margin-bottom: 6px; }
+  .bubble-bot li > :last-child { margin-bottom: 0; }
+  .bubble-bot li > ul, .bubble-bot li > ol { margin-top: 6px; }
   .bubble-bot strong { font-weight: 600; }
   .bubble-bot a { color: var(--link); text-decoration: underline; text-decoration-color: rgba(240,138,153,0.35); text-underline-offset: 2px; }
   .bubble-bot a:hover { text-decoration-color: currentColor; }
@@ -401,6 +404,7 @@
     .starters__list > li:nth-last-child(-n+2) .starter { border-bottom: none; }
     .starters__list > li:last-child .starter { border-bottom: 1px solid var(--line); }
     .bubble { max-width: 86%; }
+    .bubble-bot { max-width: 100%; }
     .map-head { padding: 10px 12px; }
     .map-head h2 { flex: 1 0 100%; margin: 0 0 6px; }
   }
