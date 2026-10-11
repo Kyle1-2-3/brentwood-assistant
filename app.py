@@ -435,6 +435,11 @@ Rules for each request:
   "what does Mr Snow teach" => "Ken Snow teacher";
   "what is in the Foote Centre" => "Foote Centre facilities";
   "how do I get help with my laptop" => "Innovations IT repair support".
+  General help-seeking such as "where can I get help", "who can I ask for
+  help", or "what support is available at school" is SCHOOL_INFO, not UNKNOWN.
+  Use school_query "student support academic help advisors" for a standalone
+  general request; preserve a specific problem from the question or recent
+  conversation when present. Bare "help" without context can need clarification.
   "who teaches math" asks for public faculty, not an individual assignment.
 - A student's assigned teacher, advisor, class/room/house, grades, reports,
   roommate, or enrolment => PERSONAL_SCHOOL. "Who is my math teacher?",
@@ -624,8 +629,24 @@ _FAST_SIGNIN_WORDS = {"sign", "signin", "signins", "time", "times", "when"}
 # A grade stated earlier in the chat must reach the classifier (it carries grade over).
 _GRADE_MENTION = re.compile(r"\b(?:gr|grade)\s*\d|\d+\s*학년", re.I)
 
+# Full-message matches only: never swallow a specific problem or a second intent.
+_GENERAL_SUPPORT = re.compile(
+    r"(?:please\s+)?(?:"
+    r"(?:where|how)\s+(?:can|do)\s+i\s+(?:get|find)\s+(?:help|support)"
+    r"|who\s+can\s+i\s+(?:ask|contact)\s+for\s+(?:help|support)"
+    r"|what\s+support\s+is\s+available"
+    r")(?:\s+(?:at|in)\s+(?:this\s+|the\s+)?school)?(?:\s+please)?",
+    re.I,
+)
+
 def quick_classify(user_msg: str) -> list[dict] | None:
-    """Rule-based intent for simple block-order / meal questions; None otherwise."""
+    """Rule-based intent for unambiguous common questions; None otherwise."""
+    support_text = (user_msg or "").strip().rstrip("?!. ").strip()
+    if _GENERAL_SUPPORT.fullmatch(support_text):
+        return [validate_request({
+            "intent": "SCHOOL_INFO",
+            "school_query": "student support academic help advisors",
+        })]
     text = (user_msg or "").lower().replace("\u2019", "'").replace("'", "")
     tokens = re.findall(r"[a-z]+", text)
     if not tokens or len(tokens) > 12 or re.search(r"[^\x00-\x7f]|\d", text):

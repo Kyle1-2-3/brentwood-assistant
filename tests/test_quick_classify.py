@@ -83,6 +83,24 @@ def test_meal_prompts_route_to_meal_handlers(no_llm, msg, intent, meal_type, day
 # Everything else still goes to the Gemini classifier
 # ---------------------------
 @pytest.mark.parametrize("msg", [
+    "where can i get help", "Where can I get help?", " WHERE CAN I GET HELP?! ",
+    "where  can I get help", "How do I find support at school?",
+    "Who can I ask for help?", "Who can I contact for support?",
+    "What support is available at school?", "Please where can I get help?",
+])
+def test_general_support_is_deterministic(no_llm, msg):
+    for memory in ("", "User: What is for lunch? Assistant: Here is the menu."):
+        out = appmod.classify_query(msg, memory)
+        assert len(out) == 1
+        assert out[0]["intent"] == "SCHOOL_INFO"
+        assert out[0]["school_query"] == "student support academic help advisors"
+
+
+@pytest.mark.parametrize("msg", [
+    "help", "where can I get help with my laptop?",
+    "where can I get help and what is for lunch?",
+    "where can I get help with bullying?", "who is my advisor?",
+    "where can I get help with this?",
     "lunch today and dinner tmr",             # compound -> LLM splits it
     "I'm gr12, do I sign in for dinner?",     # grade / sign-in
     "what about tomorrow",                    # follow-up needs memory
@@ -137,6 +155,23 @@ def _capture_answer(monkeypatch):
         return "ok"
     monkeypatch.setattr(appmod, "generate_answer", fake_answer)
     return seen
+
+
+def test_general_support_reaches_knowledge_handler(monkeypatch, no_llm):
+    queries = []
+    records = [{"title": "Support", "facts": ["Teachers offer academic support."],
+                "source_url": "https://www.brentwood.ca/academics/"}]
+    def search(query):
+        queries.append(query)
+        return records
+    monkeypatch.setattr(appmod, "search_school_knowledge", search)
+    seen = _capture_answer(monkeypatch)
+    response = appmod.app.test_client().post(
+        "/chat", json={"message": "where can i get help"})
+    assert response.status_code == 200
+    assert response.get_json()["reply"] == "ok"
+    assert queries == ["student support academic help advisors"]
+    assert seen["results"] == [{"type": "SCHOOL_INFO", "records": records}]
 
 
 def test_block_order_card_prompt_uses_schedule_handler(tmp_path, monkeypatch, no_llm):
