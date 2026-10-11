@@ -92,6 +92,14 @@ ANSWER_RULES = {
 """,
     "SCHOOL_INFO": """
 - For SCHOOL_INFO:
+  - For a broad, unspecified help question such as "Where can I get help?",
+    provide a brief starting point, not a directory: use two to four flat bullets,
+    each one short sentence naming a supported contact or service and a source.
+    Aim for about 80-120 words total. Do not add nested bullets, exact hours,
+    phone/email lists, password-reset steps or every retrieved service unless
+    the user requests those details. Include crisis-specific resources only if
+    the question or conversation indicates that need, not for generic "help".
+    For detailed questions, give the requested detail without this word target.
   - Answer only facts explicitly supported by the supplied records. A matching
     search term alone does NOT establish the answer. If there is no direct
     support for the requested person, role, service, or detail, say you do not
