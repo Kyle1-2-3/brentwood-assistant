@@ -365,7 +365,7 @@
   .map-controls button:hover:not(:disabled) { background: var(--hover); }
   .map-controls button:disabled { opacity: 0.4; cursor: default; }
   .map-stage { flex: 1 1 auto; min-height: 0; overflow: auto; padding: 16px; }
-  .map-canvas { position: relative; width: 100%; max-width: 1404px; margin: 0 auto; }
+  .map-canvas { position: relative; width: 100%; max-width: 1349px; margin: 0 auto; }
   .map-canvas img { display: block; width: 100%; height: auto; border-radius: 10px; user-select: none; -webkit-user-select: none; }
   .map-pin { position: absolute; width: 16px; height: 16px; transform: translate(-50%, -50%); pointer-events: none; }
   .map-pin__dot {
@@ -379,9 +379,10 @@
     100% { box-shadow: 0 0 0 0 rgba(200,16,46,0); }
   }
   .map-pin__label {
-    position: absolute; top: 22px; left: 50%; transform: translateX(-50%);
+    position: absolute; top: 22px; left: calc(50% + var(--label-offset, 0px)); transform: translateX(-50%);
     padding: 3px 9px; border-radius: 6px; background: rgba(15,15,17,0.9); border: 1px solid var(--line);
-    color: var(--text); font-size: 12px; font-weight: 500; white-space: nowrap;
+    color: var(--text); font-size: 12px; font-weight: 500; width: max-content;
+    box-sizing: border-box; text-align: center;
   }
   .map-pin.is-bottom .map-pin__label { top: auto; bottom: 22px; }
 
@@ -571,7 +572,7 @@
       </div>
       <div class="map-stage" tabindex="0" role="region" aria-label="Campus map; scroll to pan when zoomed in">
         <div class="map-canvas">
-          <img src="campus-map-flat.webp" width="1404" height="1120" alt="Brentwood College School campus map" draggable="false" loading="lazy" decoding="async" />
+          <img src="campus-map-polished.webp" width="1349" height="1166" alt="Brentwood College School campus map" draggable="false" loading="lazy" decoding="async" />
           <div class="map-pin" id="mapPin" hidden>
             <span class="map-pin__dot"></span>
             <span class="map-pin__label" id="mapPinLabel"></span>
@@ -1100,37 +1101,37 @@
   loadEvents();
 
   // ---------------- Campus map search ----------------
-  // x/y are percentages of campus-map-flat.webp (1404x1120), a flat 2D
-  // illustration preserving the current official map's building locations.
+  // x/y mark feature centers in campus-map-polished.webp (1349x1166).
+  // The campus-focused illustration follows the current official layout.
   // Keep campus-map.webp as the source for checking the current building layout.
   const BUILDINGS = [
-    { name: "Crooks Hall", aliases: ["dining hall", "cafeteria", "student centre", "student center", "fitness centre", "fitness center", "tuck shop", "laundry", "mcneill", "school store"], x: 27.0, y: 79.5 },
-    { name: "Campbell Common", aliases: ["common"], x: 33.6, y: 81.4 },
-    { name: "Centre for Arts & Humanities", aliases: ["humanities", "arts and humanities", "art & humanities"], x: 39.4, y: 82.2 },
-    { name: "Centre for Innovation and Learning", aliases: ["innovation", "cfil"], x: 53.0, y: 79.3 },
-    { name: "TGB Centre for Performing Arts", aliases: ["performing arts", "theatre", "theater", "tgb"], x: 31.8, y: 70.5 },
-    { name: "Hope House", aliases: [], x: 33.0, y: 57.1 },
-    { name: "Allard House", aliases: [], x: 37.7, y: 62.3 },
-    { name: "Mackenzie House", aliases: [], x: 43.1, y: 64.3 },
-    { name: "Alex House", aliases: [], x: 50.5, y: 68.2 },
-    { name: "Rogers House", aliases: [], x: 54.0, y: 55.8 },
-    { name: "Whittall House", aliases: [], x: 60.4, y: 60.2 },
-    { name: "Ellis House", aliases: [], x: 69.1, y: 54.5 },
-    { name: "Privett House", aliases: [], x: 66.2, y: 62.3 },
-    { name: "Woodward", aliases: ["admin", "administration", "admissions"], x: 77.6, y: 54.0 },
-    { name: "Maeda Health Centre", aliases: ["health", "nurse", "clinic", "maeda"], x: 30.5, y: 62.8 },
-    { name: "Foote Athletic Centre", aliases: ["gym", "athletics", "foote"], x: 77.3, y: 35.1 },
-    { name: "Artificial Turf", aliases: ["turf"], x: 78.1, y: 45.5 },
-    { name: "Field 1", aliases: [], x: 29.5, y: 40.8 },
-    { name: "Field 2", aliases: [], x: 41.3, y: 33.6 },
-    { name: "Field 3 (Gillespie Field)", aliases: ["gillespie"], x: 55.4, y: 39.8 },
-    { name: "Field 4", aliases: [], x: 66.6, y: 39.8 },
-    { name: "Tennis Courts", aliases: ["tennis"], x: 41.3, y: 44.4 },
-    { name: "Main Gate", aliases: ["gate", "entrance"], x: 49.9, y: 29.6 },
-    { name: "Grounds", aliases: [], x: 63.3, y: 29.5 },
-    { name: "Maintenance", aliases: [], x: 76.3, y: 25.8 },
-    { name: "Dock Area", aliases: ["dock", "waterfront", "pier"], x: 53.6, y: 94.1 },
-    { name: "Visitor Parking", aliases: ["parking"], x: 24.3, y: 61.2 },
+    { name: "Crooks Hall", aliases: ["dining hall", "cafeteria", "student centre", "student center", "fitness centre", "fitness center", "tuck shop", "laundry", "mcneill", "school store"], x: 18.01, y: 69.55 },
+    { name: "Campbell Common", aliases: ["common"], x: 27.21, y: 71.96 },
+    { name: "Centre for Arts & Humanities", aliases: ["humanities", "arts and humanities", "art & humanities"], x: 36.25, y: 71.53 },
+    { name: "Centre for Innovation and Learning", aliases: ["innovation", "cfil"], x: 52.19, y: 69.21 },
+    { name: "TGB Centre for Performing Arts", aliases: ["performing arts", "theatre", "theater", "tgb"], x: 25.57, y: 58.06 },
+    { name: "Hope House", aliases: [], x: 24.61, y: 41.17 },
+    { name: "Allard House", aliases: [], x: 33.21, y: 48.03 },
+    { name: "Mackenzie House", aliases: [], x: 40.33, y: 50.00 },
+    { name: "Alex House", aliases: [], x: 50.56, y: 55.75 },
+    { name: "Rogers House", aliases: [], x: 53.37, y: 40.82 },
+    { name: "Whittall House", aliases: [], x: 61.30, y: 46.31 },
+    { name: "Ellis House", aliases: [], x: 74.65, y: 39.54 },
+    { name: "Privett House", aliases: [], x: 70.87, y: 48.28 },
+    { name: "Woodward", aliases: ["admin", "administration", "admissions"], x: 85.99, y: 38.68 },
+    { name: "Maeda Health Centre", aliases: ["health", "nurse", "clinic", "maeda"], x: 23.20, y: 49.31 },
+    { name: "Foote Athletic Centre", aliases: ["gym", "athletics", "foote"], x: 85.32, y: 17.84 },
+    { name: "Artificial Turf", aliases: ["turf"], x: 85.47, y: 29.33 },
+    { name: "Field 1", aliases: [], x: 22.02, y: 22.30 },
+    { name: "Field 2", aliases: [], x: 37.81, y: 15.61 },
+    { name: "Field 3 (Gillespie Field)", aliases: ["gillespie"], x: 55.30, y: 22.73 },
+    { name: "Field 4", aliases: [], x: 69.46, y: 22.73 },
+    { name: "Tennis Courts", aliases: ["tennis"], x: 37.88, y: 25.81 },
+    { name: "Main Gate", aliases: ["gate", "entrance"], x: 48.48, y: 9.18 },
+    { name: "Grounds", aliases: [], x: 63.75, y: 8.66 },
+    { name: "Maintenance", aliases: [], x: 84.66, y: 6.26 },
+    { name: "Dock Area", aliases: ["dock", "waterfront", "pier"], x: 51.96, y: 89.62 },
+    { name: "Visitor Parking", aliases: ["parking"], x: 14.08, y: 47.51 },
   ];
 
   const mapSearchEl = $("mapSearch");
@@ -1183,10 +1184,22 @@
     const point = center || (mapPinEl.hidden ? mapViewportCenter() : findBuilding(mapSearchEl.value));
     mapZoom = Math.max(1, Math.min(mapZoom, maxZoom));
     mapCanvasEl.style.width = (fitWidth * mapZoom) + "px";
+    positionMapPinLabel();
     mapZoomOutEl.disabled = mapFitEl.disabled = mapZoom <= 1;
     mapZoomInEl.disabled = mapZoom >= maxZoom;
     if (mapZoom === 1) mapStageEl.scrollTo({ left: 0, top: 0, behavior: "instant" });
     else if (point) centerMapOn(point);
+  }
+
+  function positionMapPinLabel() {
+    if (mapPinEl.hidden) return;
+    const width = mapCanvasEl.getBoundingClientRect().width;
+    const pinX = width * parseFloat(mapPinEl.style.left) / 100;
+    mapPinLabel.style.maxWidth = Math.max(0, width - 16) + "px";
+    const halfLabel = mapPinLabel.getBoundingClientRect().width / 2;
+    // Keep names readable at the edges of the campus crop on small screens.
+    const labelX = Math.max(halfLabel + 8, Math.min(pinX, width - halfLabel - 8));
+    mapPinLabel.style.setProperty("--label-offset", (labelX - pinX) + "px");
   }
 
   function zoomMap(factor) {
@@ -1224,6 +1237,7 @@
       mapPinEl.classList.toggle("is-bottom", hit.y > 85);
       mapPinLabel.textContent = hit.name;
       mapPinEl.hidden = false;
+      positionMapPinLabel();
       centerMapOn(hit, prefersReducedMotion ? "instant" : "smooth");
       mapStatusEl.textContent = hit.name;
       mapStatusEl.classList.remove("is-error");
