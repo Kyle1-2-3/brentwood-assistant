@@ -103,7 +103,7 @@
   .nav-item {
     width: 100%; display: flex; align-items: center; gap: 11px;
     padding: 9px 12px; border: none; border-radius: 8px; min-height: 40px;
-    background: transparent; color: var(--muted); cursor: pointer; text-align: left;
+    background: transparent; color: var(--muted); cursor: pointer; text-align: left; text-decoration: none;
     font-size: 14px; font-weight: 500;
     transition: background 120ms ease, color 120ms ease;
   }
@@ -355,10 +355,17 @@
   }
   #mapSearch:focus { border-color: rgba(255,255,255,0.28); box-shadow: none; }
   #mapSearch::placeholder { color: var(--dim); }
-  .map-status { font-size: 13px; color: var(--dim); white-space: nowrap; }
+  .map-status { font-size: 13px; color: var(--dim); overflow-wrap: anywhere; }
   .map-status.is-error { color: var(--warn); }
-  .map-stage { flex: 1 1 auto; overflow: auto; padding: 16px; }
-  .map-canvas { position: relative; max-width: 2424px; min-width: 1500px; margin: 0 auto; }
+  .map-controls { display: flex; align-items: center; gap: 6px; margin-left: auto; }
+  .map-controls button {
+    min-width: 36px; min-height: 36px; padding: 4px 10px; border: 1px solid var(--line-strong);
+    border-radius: 8px; background: var(--bg-2); color: var(--text); cursor: pointer;
+  }
+  .map-controls button:hover:not(:disabled) { background: var(--hover); }
+  .map-controls button:disabled { opacity: 0.4; cursor: default; }
+  .map-stage { flex: 1 1 auto; min-height: 0; overflow: auto; padding: 16px; }
+  .map-canvas { position: relative; width: 100%; max-width: 2424px; margin: 0 auto; }
   .map-canvas img { display: block; width: 100%; height: auto; border-radius: 10px; user-select: none; -webkit-user-select: none; }
   .map-pin { position: absolute; width: 16px; height: 16px; transform: translate(-50%, -50%); pointer-events: none; }
   .map-pin__dot {
@@ -376,6 +383,7 @@
     padding: 3px 9px; border-radius: 6px; background: rgba(15,15,17,0.9); border: 1px solid var(--line);
     color: var(--text); font-size: 12px; font-weight: 500; white-space: nowrap;
   }
+  .map-pin.is-bottom .map-pin__label { top: auto; bottom: 22px; }
 
   /* ---------------- Responsive ----------------
      Tablet (<1100px): sidebar becomes a drawer; the aside moves under the
@@ -470,10 +478,10 @@
         <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>
         <span>New chat</span>
       </button>
-      <button type="button" class="nav-item" data-fill="Where can I get help?">
+      <a class="nav-item" href="https://docs.google.com/forms/d/e/1FAIpQLSejJj9oZZdHeoaXwxXY0bl8S0t7CquvalbNE_sUZ5K8IML9tw/viewform" target="_blank" rel="noopener noreferrer" aria-label="Help &amp; Feedback (opens Google Form in a new tab)">
         <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M9.5 9.5a2.5 2.5 0 1 1 3.5 2.3c-.7.4-1 .9-1 1.7"/><path d="M12 17h.01"/></svg>
         <span>Help &amp; Feedback</span>
-      </button>
+      </a>
     </aside>
 
     <!-- Main column: intro + conversation -->
@@ -555,8 +563,13 @@
         <label for="mapSearch" class="sr-only">Search a building</label>
         <input id="mapSearch" type="search" placeholder="Search a building…" autocomplete="off" spellcheck="false" />
         <span class="map-status" id="mapStatus" aria-live="polite"></span>
+        <div class="map-controls" role="group" aria-label="Map zoom">
+          <button type="button" id="mapZoomOut" aria-label="Zoom out" title="Zoom out" disabled>−</button>
+          <button type="button" id="mapFit" aria-label="Fit entire map" title="Fit entire map" disabled>Fit</button>
+          <button type="button" id="mapZoomIn" aria-label="Zoom in" title="Zoom in">+</button>
+        </div>
       </div>
-      <div class="map-stage">
+      <div class="map-stage" tabindex="0" role="region" aria-label="Campus map; scroll to pan when zoomed in">
         <div class="map-canvas">
           <img src="campus-map.webp" width="2424" height="1935" alt="Brentwood College School campus map" draggable="false" loading="lazy" decoding="async" />
           <div class="map-pin" id="mapPin" hidden>
@@ -958,7 +971,7 @@
     const isMap = view === "map";
     appEl.style.display = isMap ? "none" : "";
     mapViewEl.hidden = !isMap;
-    if (isMap) setActiveNav("map");
+    if (isMap) { setActiveNav("map"); layoutMap(); }
     else setActiveNav(welcomeEl.classList.contains("is-hidden") ? "ask" : "home");
   }
   function newChat() {
@@ -1087,7 +1100,7 @@
   loadEvents();
 
   // ---------------- Campus map search ----------------
-  // x/y are percentages of the map image (1536x1024).
+  // x/y are percentages of the current 2424x1935 campus map.
   const BUILDINGS = [
     // x/y are percentages of the map image (static/campus-map.webp, the official printed campus map).
     { name: "Crooks Hall", aliases: ["dining hall", "cafeteria", "student centre", "student center", "fitness centre", "fitness center", "tuck shop", "laundry", "mcneill", "school store"], x: 27.0, y: 79.5 },
@@ -1123,6 +1136,68 @@
   const mapStatusEl = $("mapStatus");
   const mapPinEl    = $("mapPin");
   const mapPinLabel = $("mapPinLabel");
+  const mapStageEl = mapViewEl.querySelector(".map-stage");
+  const mapCanvasEl = mapViewEl.querySelector(".map-canvas");
+  const mapImageEl = mapCanvasEl.querySelector("img");
+  const mapZoomInEl = $("mapZoomIn");
+  const mapZoomOutEl = $("mapZoomOut");
+  const mapFitEl = $("mapFit");
+  let mapZoom = 1;
+
+  function mapViewportCenter() {
+    const stage = mapStageEl.getBoundingClientRect();
+    const canvas = mapCanvasEl.getBoundingClientRect();
+    return {
+      x: canvas.width <= mapStageEl.clientWidth ? 50
+        : (stage.left + mapStageEl.clientLeft + mapStageEl.clientWidth / 2 - canvas.left) / canvas.width * 100,
+      y: canvas.height <= mapStageEl.clientHeight ? 50
+        : (stage.top + mapStageEl.clientTop + mapStageEl.clientHeight / 2 - canvas.top) / canvas.height * 100,
+    };
+  }
+
+  function centerMapOn(point, behavior = "instant") {
+    const stage = mapStageEl.getBoundingClientRect();
+    const canvas = mapCanvasEl.getBoundingClientRect();
+    // Scroll only the map, keeping the search field and page in place.
+    mapStageEl.scrollTo({
+      left: mapStageEl.scrollLeft + canvas.left + canvas.width * point.x / 100
+        - stage.left - mapStageEl.clientLeft - mapStageEl.clientWidth / 2,
+      top: mapStageEl.scrollTop + canvas.top + canvas.height * point.y / 100
+        - stage.top - mapStageEl.clientTop - mapStageEl.clientHeight / 2,
+      behavior,
+    });
+  }
+
+  function layoutMap(center) {
+    if (mapViewEl.hidden) return;
+    const padding = getComputedStyle(mapStageEl);
+    const width = mapStageEl.clientWidth - parseFloat(padding.paddingLeft) - parseFloat(padding.paddingRight);
+    const height = mapStageEl.clientHeight - parseFloat(padding.paddingTop) - parseFloat(padding.paddingBottom);
+    if (width <= 0 || height <= 0) return;
+    // Use the image's intrinsic aspect ratio even before its lazy load finishes.
+    const imageWidth = Number(mapImageEl.getAttribute("width"));
+    const imageHeight = Number(mapImageEl.getAttribute("height"));
+    const fitWidth = Math.min(width, height * imageWidth / imageHeight, imageWidth);
+    const maxZoom = imageWidth / fitWidth;
+    const point = center || (mapPinEl.hidden ? mapViewportCenter() : findBuilding(mapSearchEl.value));
+    mapZoom = Math.max(1, Math.min(mapZoom, maxZoom));
+    mapCanvasEl.style.width = (fitWidth * mapZoom) + "px";
+    mapZoomOutEl.disabled = mapFitEl.disabled = mapZoom <= 1;
+    mapZoomInEl.disabled = mapZoom >= maxZoom;
+    if (mapZoom === 1) mapStageEl.scrollTo({ left: 0, top: 0, behavior: "instant" });
+    else if (point) centerMapOn(point);
+  }
+
+  function zoomMap(factor) {
+    const point = mapPinEl.hidden ? mapViewportCenter() : findBuilding(mapSearchEl.value);
+    mapZoom *= factor;
+    layoutMap(point);
+  }
+  mapZoomInEl.addEventListener("click", () => zoomMap(1.5));
+  mapZoomOutEl.addEventListener("click", () => zoomMap(1 / 1.5));
+  mapFitEl.addEventListener("click", () => { mapZoom = 1; layoutMap(); });
+  // Handles window resizing, rotation, and the on-screen keyboard.
+  new ResizeObserver(() => layoutMap()).observe(mapStageEl);
 
   function findBuilding(query) {
     const q = query.trim().toLowerCase();
@@ -1145,9 +1220,10 @@
     if (hit) {
       mapPinEl.style.left = hit.x + "%";
       mapPinEl.style.top  = hit.y + "%";
+      mapPinEl.classList.toggle("is-bottom", hit.y > 85);
       mapPinLabel.textContent = hit.name;
       mapPinEl.hidden = false;
-      mapPinEl.scrollIntoView({ block: "center", inline: "center", behavior: prefersReducedMotion ? "auto" : "smooth" });
+      centerMapOn(hit, prefersReducedMotion ? "instant" : "smooth");
       mapStatusEl.textContent = hit.name;
       mapStatusEl.classList.remove("is-error");
     } else {
