@@ -571,7 +571,7 @@
       </div>
       <div class="map-stage" tabindex="0" role="region" aria-label="Campus map; scroll to pan when zoomed in">
         <div class="map-canvas">
-          <img src="campus-map-illustrated.webp" width="1404" height="1120" alt="Brentwood College School campus map" draggable="false" loading="lazy" decoding="async" />
+          <img src="campus-map-flat.webp" width="1404" height="1120" alt="Brentwood College School campus map" draggable="false" loading="lazy" decoding="async" />
           <div class="map-pin" id="mapPin" hidden>
             <span class="map-pin__dot"></span>
             <span class="map-pin__label" id="mapPinLabel"></span>
@@ -1100,8 +1100,8 @@
   loadEvents();
 
   // ---------------- Campus map search ----------------
-  // x/y are percentages of campus-map-illustrated.webp (1404x1120), redrawn
-  // from the current official map with the older illustration's visual style.
+  // x/y are percentages of campus-map-flat.webp (1404x1120), a flat 2D
+  // illustration preserving the current official map's building locations.
   // Keep campus-map.webp as the source for checking the current building layout.
   const BUILDINGS = [
     { name: "Crooks Hall", aliases: ["dining hall", "cafeteria", "student centre", "student center", "fitness centre", "fitness center", "tuck shop", "laundry", "mcneill", "school store"], x: 27.0, y: 79.5 },
