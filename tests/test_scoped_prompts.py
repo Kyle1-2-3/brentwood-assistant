@@ -57,7 +57,7 @@ def test_mixed_question_gets_union_of_rules_without_duplicates_or_unrelated_topi
     ])
     for key in ("MEAL", "MEALS_DAY", "MENU_LINKS", "MEAL_SIGNIN", "SCHEDULE"):
         assert prompt.count(ANSWER_RULES[key].strip()) == 1
-    for key in ("AFTERNOON", "BEDTIME", "SCHOOL_INFO", "SCHOOL_BREAKS", "SCHOOL_LEAVE"):
+    for key in ("AFTERNOON", "BEDTIME", "SCHOOL_INFO", "SCHOOL_BREAKS", "SCHOOL_LEAVE", "HEALTH_CENTRE_BOOKING"):
         assert ANSWER_RULES[key].strip() not in prompt
     assert prompt.startswith(ANSWER_COMMON.strip())
 

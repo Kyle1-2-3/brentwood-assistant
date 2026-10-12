@@ -398,7 +398,7 @@ Schema:
 {
   "requests": [
     {
-      "intent": "GREETING" | "MEAL" | "MEALS_DAY" | "SCHEDULE" | "AFTERNOON" | "PERSONAL_ACTIVITY" | "PERSONAL_SCHOOL" | "SCHOOL_INFO" | "SCHOOL_BREAKS" | "MEAL_SIGNIN" | "SIGNIN_SUMMARY" | "GRADE_GROUP" | "BEDTIME" | "EVENT_SEARCH" | "LOCATION" | "UNKNOWN",
+      "intent": "GREETING" | "MEAL" | "MEALS_DAY" | "SCHEDULE" | "AFTERNOON" | "PERSONAL_ACTIVITY" | "PERSONAL_SCHOOL" | "SCHOOL_INFO" | "SCHOOL_BREAKS" | "HEALTH_CENTRE_BOOKING" | "MEAL_SIGNIN" | "SIGNIN_SUMMARY" | "GRADE_GROUP" | "BEDTIME" | "EVENT_SEARCH" | "LOCATION" | "UNKNOWN",
       "day_ref": "TODAY" | "TOMORROW" | "DAY_AFTER_TOMORROW" | "MONDAY" | "TUESDAY" | "WEDNESDAY" | "THURSDAY" | "FRIDAY" | "SATURDAY" | "SUNDAY" | "ANY",
       "meal_type": "BREAKFAST" | "LUNCH" | "DINNER" | "BRUNCH" | "AFTERNOON_SNACK" | null,
       "meal_focus": "MENU" | "TIMES" | "MENU_AND_TIMES",
@@ -441,6 +441,12 @@ Rules for each request:
   general request; preserve a specific problem from the question or recent
   conversation when present. Bare "help" without context can need clarification.
   "who teaches math" asks for public faculty, not an individual assignment.
+- How to book or arrange a Health Centre appointment, or who to speak to about
+  booking one => HEALTH_CENTRE_BOOKING. This includes paraphrases and other
+  languages, e.g. "How do I book the Health Centre?", "Who can help me make a
+  nurse appointment?", "보건실 예약 어떻게 해?". Location questions remain LOCATION;
+  opening hours, symptoms, and other health questions are not booking requests.
+  For a compound question, retain each separately requested topic as usual.
 - A student's assigned teacher, advisor, class/room/house, grades, reports,
   roommate, or enrolment => PERSONAL_SCHOOL. "Who is my math teacher?",
   "내 수학 선생님 누구야", "who is my advisor", "which house am I in" are
@@ -537,7 +543,7 @@ UNKNOWN_REQUEST = {
 
 VALID_INTENTS = {
     "GREETING", "MEAL", "MEALS_DAY", "SCHEDULE", "AFTERNOON", "PERSONAL_ACTIVITY",
-    "PERSONAL_SCHOOL", "SCHOOL_INFO", "SCHOOL_BREAKS",
+    "PERSONAL_SCHOOL", "SCHOOL_INFO", "SCHOOL_BREAKS", "HEALTH_CENTRE_BOOKING",
     "MEAL_SIGNIN", "SIGNIN_SUMMARY", "GRADE_GROUP", "BEDTIME",
     "EVENT_SEARCH", "LOCATION", "UNKNOWN"
 }
@@ -639,9 +645,20 @@ _GENERAL_SUPPORT = re.compile(
     re.I,
 )
 
+# Only the booking topic is fixed; its wording is generated from the contact data.
+# Full-message matching keeps additional questions in the normal classifier.
+_HEALTH_CENTRE_BOOKING = re.compile(
+    r"how\s+(?:do|can)\s+i\s+book\s+"
+    r"(?:an?\s+appointment\s+(?:at|with)\s+)?"
+    r"(?:the\s+)?(?:maeda\s+)?health\s+cent(?:re|er)",
+    re.I,
+)
+
 def quick_classify(user_msg: str) -> list[dict] | None:
     """Rule-based intent for unambiguous common questions; None otherwise."""
     support_text = (user_msg or "").strip().rstrip("?!. ").strip()
+    if _HEALTH_CENTRE_BOOKING.fullmatch(support_text):
+        return [validate_request({"intent": "HEALTH_CENTRE_BOOKING"})]
     if _GENERAL_SUPPORT.fullmatch(support_text):
         return [validate_request({
             "intent": "SCHOOL_INFO",
@@ -790,6 +807,14 @@ def build_result_from_classification(cls: dict, user_msg: str) -> dict:
 
     if intent == "PERSONAL_SCHOOL":
         return {"type": "PERSONAL_SCHOOL", "reply": PERSONAL_SCHOOL_REPLY}
+
+    if intent == "HEALTH_CENTRE_BOOKING":
+        return {
+            "type": "HEALTH_CENTRE_BOOKING",
+            "service": "Health Centre appointment",
+            "next_step": "Talk to one of these staff contacts about booking.",
+            "contacts": ["house parent", "BFA", "teacher"],
+        }
 
     if intent == "SCHOOL_INFO":
         return {
@@ -1105,7 +1130,7 @@ def generate_answer(user_msg: str, classifications: list[dict], results: list[di
         contents=json.dumps(payload, ensure_ascii=False),
         config=types.GenerateContentConfig(
             system_instruction=answer_system_for(results) + school_clock_instruction(),
-            temperature=0.2,
+            temperature=0.7 if len(results) == 1 and results[0]["type"] == "HEALTH_CENTRE_BOOKING" else 0.2,
             thinking_config=NO_THINKING,
         ),
     )
@@ -1120,17 +1145,6 @@ STATIC_REPLIES = {
     "PERSONAL_ACTIVITY": PERSONAL_ACTIVITY_REPLY,
     "PERSONAL_SCHOOL": PERSONAL_SCHOOL_REPLY,
 }
-
-# A fixed answer for the Health Centre starter card and equivalent booking questions.
-# Match the whole question so a second request or a medical concern still reaches
-# the normal classifier.
-HEALTH_CENTRE_BOOKING_REPLY = "Talk to your house parent, BFA, or teacher."
-_HEALTH_CENTRE_BOOKING = re.compile(
-    r"how\s+(?:do|can)\s+i\s+book\s+"
-    r"(?:an?\s+appointment\s+(?:at|with)\s+)?"
-    r"(?:the\s+)?(?:maeda\s+)?health\s+cent(?:re|er)",
-    re.I,
-)
 
 
 def capture_unanswered(req_id: str, question: str, answer: str, details: str = "") -> None:
@@ -1158,12 +1172,6 @@ def chat_events(user_msg: str, memory: str, req_id: str):
         raw_msg = user_msg.replace(DEV_TRIGGER, " ").strip() or "Hi!"
         yield "status", {"stage": "writing"}
         yield reply(generate_raw_answer(raw_msg, memory))
-        return
-
-    if _HEALTH_CENTRE_BOOKING.fullmatch(user_msg.strip().rstrip("?!. ").strip()):
-        logger.info("[%s] intents: HEALTH_CENTRE_BOOKING", req_id)
-        yield "status", {"stage": "writing"}
-        yield reply(HEALTH_CENTRE_BOOKING_REPLY)
         return
 
     yield "status", {"stage": "understanding"}

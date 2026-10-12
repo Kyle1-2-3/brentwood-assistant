@@ -68,6 +68,17 @@ STYLE EXAMPLES (illustrative wording only, never evidence about the school):
 """ + "\n" + ENGLISH_ONLY_INSTRUCTION
 
 ANSWER_RULES = {
+    "HEALTH_CENTRE_BOOKING": """
+- For HEALTH_CENTRE_BOOKING:
+  - Naturally explain that the student should talk to their house parent, a BFA,
+    or a teacher about booking a Health Centre appointment. Preserve all three
+    contact options, making clear that any one of them is an option.
+  - Use one or two short, friendly sentences. Adapt the phrasing to the question
+    and vary the wording naturally; there is no fixed sentence to repeat.
+  - Keep the supplied guidance unchanged. Do not add a booking website, form,
+    phone number, opening hours, deadlines, or further steps. Do not claim an
+    appointment has been booked or that the student must contact all three.
+""",
     "SCHOOL_BREAKS": """
 - For SCHOOL_BREAKS:
   - Use the official dated leave records, including the academic year. Match the
