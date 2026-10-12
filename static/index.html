@@ -365,7 +365,7 @@
   .map-controls button:hover:not(:disabled) { background: var(--hover); }
   .map-controls button:disabled { opacity: 0.4; cursor: default; }
   .map-stage { flex: 1 1 auto; min-height: 0; overflow: auto; padding: 16px; }
-  .map-canvas { position: relative; width: 100%; max-width: 2424px; margin: 0 auto; }
+  .map-canvas { position: relative; width: 100%; max-width: 1404px; margin: 0 auto; }
   .map-canvas img { display: block; width: 100%; height: auto; border-radius: 10px; user-select: none; -webkit-user-select: none; }
   .map-pin { position: absolute; width: 16px; height: 16px; transform: translate(-50%, -50%); pointer-events: none; }
   .map-pin__dot {
@@ -571,7 +571,7 @@
       </div>
       <div class="map-stage" tabindex="0" role="region" aria-label="Campus map; scroll to pan when zoomed in">
         <div class="map-canvas">
-          <img src="campus-map.webp" width="2424" height="1935" alt="Brentwood College School campus map" draggable="false" loading="lazy" decoding="async" />
+          <img src="campus-map-illustrated.webp" width="1404" height="1120" alt="Brentwood College School campus map" draggable="false" loading="lazy" decoding="async" />
           <div class="map-pin" id="mapPin" hidden>
             <span class="map-pin__dot"></span>
             <span class="map-pin__label" id="mapPinLabel"></span>
@@ -1100,9 +1100,10 @@
   loadEvents();
 
   // ---------------- Campus map search ----------------
-  // x/y are percentages of the current 2424x1935 campus map.
+  // x/y are percentages of campus-map-illustrated.webp (1404x1120), redrawn
+  // from the current official map with the older illustration's visual style.
+  // Keep campus-map.webp as the source for checking the current building layout.
   const BUILDINGS = [
-    // x/y are percentages of the map image (static/campus-map.webp, the official printed campus map).
     { name: "Crooks Hall", aliases: ["dining hall", "cafeteria", "student centre", "student center", "fitness centre", "fitness center", "tuck shop", "laundry", "mcneill", "school store"], x: 27.0, y: 79.5 },
     { name: "Campbell Common", aliases: ["common"], x: 33.6, y: 81.4 },
     { name: "Centre for Arts & Humanities", aliases: ["humanities", "arts and humanities", "art & humanities"], x: 39.4, y: 82.2 },
@@ -1116,7 +1117,7 @@
     { name: "Whittall House", aliases: [], x: 60.4, y: 60.2 },
     { name: "Ellis House", aliases: [], x: 69.1, y: 54.5 },
     { name: "Privett House", aliases: [], x: 66.2, y: 62.3 },
-    { name: "Woodward", aliases: ["admin", "administration", "admissions"], x: 73.6, y: 58.7 },
+    { name: "Woodward", aliases: ["admin", "administration", "admissions"], x: 77.6, y: 54.0 },
     { name: "Maeda Health Centre", aliases: ["health", "nurse", "clinic", "maeda"], x: 30.5, y: 62.8 },
     { name: "Foote Athletic Centre", aliases: ["gym", "athletics", "foote"], x: 77.3, y: 35.1 },
     { name: "Artificial Turf", aliases: ["turf"], x: 78.1, y: 45.5 },
@@ -1125,7 +1126,7 @@
     { name: "Field 3 (Gillespie Field)", aliases: ["gillespie"], x: 55.4, y: 39.8 },
     { name: "Field 4", aliases: [], x: 66.6, y: 39.8 },
     { name: "Tennis Courts", aliases: ["tennis"], x: 41.3, y: 44.4 },
-    { name: "Main Gate", aliases: ["gate", "entrance"], x: 49.7, y: 28.2 },
+    { name: "Main Gate", aliases: ["gate", "entrance"], x: 49.9, y: 29.6 },
     { name: "Grounds", aliases: [], x: 63.3, y: 29.5 },
     { name: "Maintenance", aliases: [], x: 76.3, y: 25.8 },
     { name: "Dock Area", aliases: ["dock", "waterfront", "pier"], x: 53.6, y: 94.1 },
