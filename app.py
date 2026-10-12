@@ -1098,7 +1098,7 @@ def render_academic_timetable(result: dict) -> str:
     return text
 
 
-def generate_answer(user_msg: str, classifications: list[dict], results: list[dict]) -> str:
+def generate_answer(user_msg: str, classifications: list[dict], results: list[dict], memory: str = "") -> str:
     results = focused_answer_results(classifications, results)
     if results and all(r["type"] in {"MEAL", "MEALS_DAY"}
                        and r["meal_focus"] == "MENU" for r in results):
@@ -1123,6 +1123,8 @@ def generate_answer(user_msg: str, classifications: list[dict], results: list[di
         "classifications": classifications,
         "results": results,
     }
+    if memory and any(r["type"] == "HEALTH_CENTRE_BOOKING" for r in results):
+        payload["recent_conversation"] = memory.strip()[-1500:]
 
     reply = gemini_text(
         "generate_answer",
@@ -1214,6 +1216,8 @@ def chat_events(user_msg: str, memory: str, req_id: str):
     types_seen = {r["type"] for r in results}
     if len(types_seen) == 1 and next(iter(types_seen)) in STATIC_REPLIES:
         text = STATIC_REPLIES[next(iter(types_seen))]
+    elif "HEALTH_CENTRE_BOOKING" in types_seen:
+        text = generate_answer(user_msg, actionable, results, memory=memory)
     else:
         text = generate_answer(user_msg, actionable, results)
     yield reply(text)

@@ -26,8 +26,9 @@ def test_booking_generates_varied_wording_from_the_same_contacts(monkeypatch, me
 
     monkeypatch.setattr(bot.client.models, "generate_content", generate)
     headers = {"Accept": "text/event-stream"} if stream else {}
+    memory = ""
     for variant in variants:
-        response = bot.app.test_client().post("/chat", json={"message": message}, headers=headers)
+        response = bot.app.test_client().post("/chat", json={"message": message, "memory": memory}, headers=headers)
         assert response.status_code == 200
         if stream:
             events = response.get_data(as_text=True).strip().split("\n\n")
@@ -37,12 +38,14 @@ def test_booking_generates_varied_wording_from_the_same_contacts(monkeypatch, me
             payload = response.get_json()
         assert payload["reply"] == variant
         assert payload["request_id"]
+        memory = f"Student: {message}\nAssistant: {variant}"
     assert len(calls) == 2  # One answer call per request; no classification call.
     for call in calls:
         data = json.loads(call["contents"])
         assert data["user_message"] == message.strip()
         assert data["results"][0]["contacts"] == ["house parent", "BFA", "teacher"]
         assert ANSWER_RULES["HEALTH_CENTRE_BOOKING"].strip() in call["config"].system_instruction
+    assert variants[0] in json.loads(calls[1]["contents"])["recent_conversation"]
 
 
 @pytest.mark.parametrize("message", [
