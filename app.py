@@ -653,6 +653,29 @@ _HEALTH_CENTRE_BOOKING = re.compile(
     r"(?:the\s+)?(?:maeda\s+)?health\s+cent(?:re|er)",
     re.I,
 )
+_BOOKING_VARIATIONS = (
+    "To arrange a Health Centre appointment, speak with your house parent, a BFA, or a teacher.",
+    "Your house parent, a BFA, or a teacher is someone you can ask about booking the Health Centre.",
+    "For a Health Centre booking, reach out to your house parent, a BFA, or a teacher.",
+    "Start by talking to your house parent, a BFA, or a teacher about a Health Centre appointment.",
+)
+
+
+def vary_repeated_booking_reply(reply: str, memory: str) -> str:
+    """Keep generated wording unless the model repeats an earlier answer."""
+    def plain(text):
+        return re.sub(r"[\W_]+", " ", text.casefold()).strip()
+
+    history = plain(memory)
+    if not history or not plain(reply) or plain(reply) not in history:
+        return reply
+    for alternative in _BOOKING_VARIATIONS:
+        if plain(alternative) not in history:
+            return alternative
+    # A long conversation may have used every fallback; avoid its latest reply.
+    latest = plain(memory.rsplit("Assistant:", 1)[-1])
+    return next(alternative for alternative in _BOOKING_VARIATIONS
+                if plain(alternative) != latest)
 
 def quick_classify(user_msg: str) -> list[dict] | None:
     """Rule-based intent for unambiguous common questions; None otherwise."""
@@ -1136,7 +1159,11 @@ def generate_answer(user_msg: str, classifications: list[dict], results: list[di
             thinking_config=NO_THINKING,
         ),
     )
-    return LLM_FAILURE_REPLY if reply is None else reply
+    if reply is None:
+        return LLM_FAILURE_REPLY
+    if len(results) == 1 and results[0]["type"] == "HEALTH_CENTRE_BOOKING":
+        return vary_repeated_booking_reply(reply, memory)
+    return reply
 
 # ---------------------------
 # Routes

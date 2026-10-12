@@ -86,3 +86,29 @@ def test_paraphrased_booking_and_another_question_keep_both_answers(monkeypatch)
     assert [result["type"] for result in results] == ["HEALTH_CENTRE_BOOKING", "LOCATION"]
     assert results[0]["contacts"] == ["house parent", "BFA", "teacher"]
     assert "campus map" in response.get_json()["reply"]
+
+
+def test_repeated_model_wording_changes_without_an_extra_model_call(monkeypatch):
+    repeated = "You can talk to your **house parent**, a **BFA**, or a **teacher** about booking a Health Centre appointment. 🩺"
+    calls = []
+    monkeypatch.setattr(bot.client.models, "generate_content", lambda **kwargs:
+                        calls.append(kwargs) or SimpleNamespace(text=repeated))
+    memory = f"Assistant: {repeated}"
+    seen = {repeated}
+    for _ in range(3):
+        response = bot.app.test_client().post("/chat", json={
+            "message": "How do I book the Health Centre?", "memory": memory})
+        reply = response.get_json()["reply"]
+        assert reply not in seen
+        assert all(contact in reply for contact in ("house parent", "BFA", "teacher"))
+        seen.add(reply)
+        memory += f"\nStudent: How do I book the Health Centre?\nAssistant: {reply}"
+    assert len(calls) == 3
+
+
+def test_repetition_check_ignores_markdown_and_keeps_varying_after_fallbacks_used():
+    history = "\n".join(f"Assistant: {reply}" for reply in bot._BOOKING_VARIATIONS)
+    last_reply = bot._BOOKING_VARIATIONS[-1]
+    assert bot.vary_repeated_booking_reply(last_reply, history) != last_reply
+    original = "Talk to your **house parent**, **BFA**, or **teacher**."
+    assert bot.vary_repeated_booking_reply(original, "Assistant: Talk to your house parent, BFA, or teacher.") != original
