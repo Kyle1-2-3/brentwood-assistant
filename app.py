@@ -1121,6 +1121,17 @@ STATIC_REPLIES = {
     "PERSONAL_SCHOOL": PERSONAL_SCHOOL_REPLY,
 }
 
+# A fixed answer for the Health Centre starter card and equivalent booking questions.
+# Match the whole question so a second request or a medical concern still reaches
+# the normal classifier.
+HEALTH_CENTRE_BOOKING_REPLY = "Talk to your house parent, BFA, or teacher."
+_HEALTH_CENTRE_BOOKING = re.compile(
+    r"how\s+(?:do|can)\s+i\s+book\s+"
+    r"(?:an?\s+appointment\s+(?:at|with)\s+)?"
+    r"(?:the\s+)?(?:maeda\s+)?health\s+cent(?:re|er)",
+    re.I,
+)
+
 
 def capture_unanswered(req_id: str, question: str, answer: str, details: str = "") -> None:
     """Queue a question the bot could not answer; never let this break the reply."""
@@ -1147,6 +1158,12 @@ def chat_events(user_msg: str, memory: str, req_id: str):
         raw_msg = user_msg.replace(DEV_TRIGGER, " ").strip() or "Hi!"
         yield "status", {"stage": "writing"}
         yield reply(generate_raw_answer(raw_msg, memory))
+        return
+
+    if _HEALTH_CENTRE_BOOKING.fullmatch(user_msg.strip().rstrip("?!. ").strip()):
+        logger.info("[%s] intents: HEALTH_CENTRE_BOOKING", req_id)
+        yield "status", {"stage": "writing"}
+        yield reply(HEALTH_CENTRE_BOOKING_REPLY)
         return
 
     yield "status", {"stage": "understanding"}
