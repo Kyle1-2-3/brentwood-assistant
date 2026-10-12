@@ -12,6 +12,7 @@ from datetime import datetime, date, timedelta
 import calendar
 import json
 import logging
+import random
 import re
 import uuid
 import urllib.parse
@@ -1175,6 +1176,28 @@ STATIC_REPLIES = {
     "PERSONAL_SCHOOL": PERSONAL_SCHOOL_REPLY,
 }
 
+UNKNOWN_REPLIES = (
+    "I’m not quite sure what you mean. Could you rephrase? I can help with meals, schedules, sign-in times, school staff, facilities, or student services. 🙂",
+    "Could you give me a little more detail? I can help with school meals, schedules, sign-in times, staff, facilities, and student services.",
+    "I didn’t quite catch that 🙂 Try asking another way about meals, schedules, sign-in times, school staff, facilities, or student services.",
+    "A little more context would help me understand. Are you asking about meals, schedules, sign-in times, school staff, facilities, or student services?",
+    "Could you clarify what you’d like to know? I can answer questions about meals, schedules, sign-in times, school staff, facilities, and student services.",
+    "I’m not sure how to answer that yet. Try a more specific question about meals, schedules, sign-in times, school staff, facilities, or student services.",
+)
+
+
+def unknown_reply(memory: str = "") -> str:
+    """Vary clarification prompts without another model call, even after an outage."""
+    def plain(text):
+        return re.sub(r"[\W_]+", " ", text.casefold()).strip()
+
+    history = plain(memory)
+    unused = [reply for reply in UNKNOWN_REPLIES if plain(reply) not in history]
+    if unused:
+        return random.choice(unused)
+    # Reuse the least recently seen version once the conversation has used all six.
+    return min(UNKNOWN_REPLIES, key=lambda reply: history.rfind(plain(reply)))
+
 
 def capture_unanswered(req_id: str, question: str, answer: str, details: str = "") -> None:
     """Queue a question the bot could not answer; never let this break the reply."""
@@ -1222,7 +1245,7 @@ def chat_events(user_msg: str, memory: str, req_id: str):
             yield reply(generate_answer(user_msg, classifications, [{"type": "GREETING"}]))
             return
 
-        not_sure = "Hey 🙂 I’m not fully sure what you want. You can ask about meals, schedules, sign-in times, school staff, facilities, or student services."
+        not_sure = unknown_reply(memory)
         capture_unanswered(req_id, user_msg, not_sure)
         yield reply(not_sure)
         return

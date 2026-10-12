@@ -48,6 +48,7 @@ def test_unknown_question_is_captured_automatically(store, monkeypatch):
     assert data["request_id"]
     assert [(q, t, s) for q, _, t, _, s, _, _ in rows(store)] == [("Can I borrow a kayak?", "unanswered", "automatic")]
     assert rows(store)[0][6] == data["request_id"]
+    assert rows(store)[0][1] == data["reply"]
 
 
 def test_capture_failure_never_breaks_the_reply(monkeypatch):

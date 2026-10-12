@@ -136,7 +136,7 @@ def test_chat_all_unknown_falls_back(monkeypatch):
         {"intent": "UNKNOWN", "day_ref": "ANY", "meal_type": None, "grade": None},
     ])
     resp = appmod.app.test_client().post("/chat", json={"message": "asdf"})
-    assert "not fully sure" in resp.get_json()["reply"]
+    assert resp.get_json()["reply"] in appmod.UNKNOWN_REPLIES
 
 
 def test_chat_greeting_only_still_greets(monkeypatch):
