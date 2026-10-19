@@ -26,7 +26,7 @@ from school_knowledge import search_school_knowledge
 from school_calendar import calendar_result, leave_on
 from school_events import upcoming_events as prioritize_upcoming_events
 from answer_prompts import answer_system_for, ENGLISH_ONLY_INSTRUCTION
-from sync_schedule import SCHOOL_TZ, today
+from sync_schedule import SCHOOL_TZ, today, generalize_personal_counselling
 
 load_dotenv()
 
@@ -322,12 +322,12 @@ def fetch_dorm_signins(day_id: int, grade: int | None = None) -> list[dict]:
         lambda row, g: overrides.get((g, row["rule_order"]), row["start_time"]))
 
 def fetch_timeline_by_date(sched_date: str) -> list[dict]:
-    return query("""
+    return generalize_personal_counselling(query("""
         SELECT item_type, block_code, start_time, end_time, item_order, event_name, all_day
         FROM ScheduleTimeline
         WHERE sched_date = ?
         ORDER BY item_order
-    """, (sched_date,))
+    """, (sched_date,)))
 
 def fetch_next_event(item_type: str, from_date: str) -> list[dict]:
     """Nearest upcoming occurrence (on/after from_date) of a named timeline event."""

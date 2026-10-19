@@ -52,13 +52,23 @@ def test_regular_activities_are_excluded(title):
     assert ss.parse_ical(calendar(f"SUMMARY:{title}\nDTSTART:20260923T210000Z")) == {}
 
 
-def test_counselling_is_an_event_not_an_invented_f_block():
+@pytest.mark.parametrize("title", ["University Counselling-F1", "University Counseling-F1"])
+def test_personal_counselling_becomes_common_f_block(title):
     row = ss.parse_ical(calendar(
-        "SUMMARY:University Counselling-F1\nDTSTART:20261007T175500Z"
+        f"SUMMARY:{title}\nDTSTART:20261007T175500Z\nDTEND:20261007T190000Z"
+    ))["2026-10-07"][0]
+    assert row["item_type"] == "BLOCK"
+    assert row["block_code"] == "F"
+    assert row["event_name"] is None
+    assert (row["start_time"], row["end_time"]) == ("10:55", "12:00")
+
+
+def test_general_university_event_keeps_its_name():
+    row = ss.parse_ical(calendar(
+        "SUMMARY:University Counselling Information Evening\nDTSTART:20261007T230000Z"
     ))["2026-10-07"][0]
     assert row["item_type"] == "EVENT"
-    assert row["block_code"] is None
-    assert row["event_name"] == "University Counselling-F1"
+    assert row["event_name"] == "University Counselling Information Evening"
 
 
 def legacy_db(path):

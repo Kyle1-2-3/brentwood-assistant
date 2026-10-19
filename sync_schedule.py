@@ -32,6 +32,7 @@ DB_PATH = os.path.join("db", "school.db")
 SCHOOL_TZ = ZoneInfo("America/Vancouver")
 
 BLOCK_SUFFIX = re.compile(r"-([A-F])$")
+PERSONAL_COUNSELLING_F = re.compile(r"University\s+Counsell?ing\s*[-–]\s*F\d*", re.I)
 COCURRICULAR = re.compile(
     r"Attendance Blk| - (?:Fall|Winter|Spring|Summer)$|Rock Band \(\d+\)$", re.I
 )
@@ -54,6 +55,31 @@ def renumber(rows: list[dict]) -> None:
         row["item_order"] = index
 
 
+def generalize_personal_counselling(rows: list[dict]) -> list[dict]:
+    """Expose the feed owner's counselling period as the shared F block."""
+    converted = []
+    slots = set()
+    for original in rows:
+        row = dict(original)
+        if (row.get("item_type") == "EVENT" and not row.get("all_day")
+                and PERSONAL_COUNSELLING_F.fullmatch((row.get("event_name") or "").strip())):
+            row.update(item_type="BLOCK", block_code="F", event_name=None)
+            slots.add((row["start_time"], row["end_time"]))
+        converted.append(row)
+    if not slots:
+        return rows
+    result, seen = [], set()
+    for row in converted:
+        slot = (row["start_time"], row["end_time"])
+        if row["item_type"] == "BLOCK" and row.get("block_code") == "F" and slot in slots:
+            if slot in seen:
+                continue
+            seen.add(slot)
+        result.append(row)
+    renumber(result)
+    return result
+
+
 def complete_common_timetable(by_date: dict[str, list[dict]]) -> int:
     """Fill personal free periods from a uniquely evidenced school rotation.
 
@@ -64,6 +90,7 @@ def complete_common_timetable(by_date: dict[str, list[dict]]) -> int:
     """
     completed = 0
     for date_key, rows in by_date.items():
+        rows = by_date[date_key] = generalize_personal_counselling(rows)
         weekday = date.fromisoformat(date_key).weekday()
         if weekday == 6:
             continue
@@ -186,7 +213,8 @@ def parse_ical(text: str) -> dict[str, list[dict]]:
                 "start_time": start_time, "end_time": end_time,
             })
 
-    for rows in by_date.values():
+    for date_key, rows in by_date.items():
+        rows = by_date[date_key] = generalize_personal_counselling(rows)
         renumber(rows)
 
     return by_date

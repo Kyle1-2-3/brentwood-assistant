@@ -105,4 +105,23 @@ def test_personal_event_in_a_free_period_does_not_remove_the_common_block():
          "start_time": "10:55", "end_time": "12:00"}]}
     ss.complete_common_timetable(data)
     assert [r["block_code"] for r in data["2026-10-07"] if r["item_type"] == "BLOCK"] == ["E", "F", "D"]
-    assert sum(r["item_type"] == "EVENT" for r in data["2026-10-07"]) == 1
+    assert sum(r["item_type"] == "EVENT" for r in data["2026-10-07"]) == 0
+
+
+def test_existing_counselling_rows_are_generalized_without_duplicate_blocks(tmp_path, monkeypatch):
+    import sqlite3
+    path = tmp_path / "school.db"
+    with sqlite3.connect(path) as conn:
+        conn.execute("CREATE TABLE ScheduleTimeline (sched_date TEXT, item_type TEXT, block_code TEXT, start_time TEXT, end_time TEXT, item_order INTEGER, event_name TEXT, all_day INTEGER)")
+        conn.executemany("INSERT INTO ScheduleTimeline VALUES (?,?,?,?,?,?,?,?)", [
+            ("2026-10-21", "EVENT", None, "10:55", "12:00", 1, "University Counselling-F1", 0),
+            ("2026-10-21", "BLOCK", "F", "10:55", "12:00", 2, None, 0),
+        ])
+    monkeypatch.setattr(appmod, "DB_PATH", str(path))
+    rows = appmod.fetch_timeline_by_date("2026-10-21")
+    assert len(rows) == 1
+    assert rows[0]["item_type"] == "BLOCK" and rows[0]["block_code"] == "F"
+    assert rows[0]["event_name"] is None
+    assert ss.generalize_personal_counselling(rows) == rows
+    rendered = appmod.render_academic_timetable({"day_name": "Wednesday", "rows": rows})
+    assert "Block F" in rendered and "Counselling" not in rendered
