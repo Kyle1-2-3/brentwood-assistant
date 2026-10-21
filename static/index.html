@@ -292,6 +292,14 @@
     padding-bottom: env(safe-area-inset-bottom);
   }
   .composer { width: 100%; max-width: var(--content-w); margin: 0 auto; padding: 12px 32px 10px; }
+  /* Home screen: the dock sits inline under the intro instead of pinned to
+     the viewport bottom. .main-inner already supplies the side padding. */
+  .composer-dock.is-inline {
+    position: static; z-index: auto; background: none; border-top: none;
+    -webkit-backdrop-filter: none; backdrop-filter: none;
+    padding-bottom: 0; margin-top: 22px;
+  }
+  .composer-dock.is-inline .composer { padding: 0; }
   .composer__field {
     display: flex; align-items: flex-end; gap: 8px;
     background: var(--bg-2); border: 1px solid var(--line-strong); border-radius: 24px;
@@ -498,7 +506,7 @@
               <p class="intro__sub">Ask about block order, meals, sign-in times, clubs, support and the rest of school life.</p>
             </section>
 
-            <section class="starters" aria-labelledby="startersTitle">
+            <section class="starters" id="starters" aria-labelledby="startersTitle">
               <p class="label" id="startersTitle">Try asking</p>
               <ul class="starters__list">
                 <li><button type="button" class="starter" data-send="What's the block order today?">
@@ -539,8 +547,10 @@
         </div>
       </main>
 
-      <!-- Composer -->
-      <div class="composer-dock">
+      <!-- Composer: lives inline under the intro on the home screen, and
+           relocates into the sticky bottom dock once a chat is active
+           (JS; see placeComposer, same relocation pattern as placeAside). -->
+      <div class="composer-dock" id="composerDock">
         <form class="composer" id="form">
           <div class="composer__field">
             <label for="input" class="sr-only">Ask Brentwood Assistant</label>
@@ -653,6 +663,8 @@
   const mapViewEl = $("mapView");
   const asideEl   = $("aside");
   const asideSlot = $("asideSlot");
+  const composerDockEl = $("composerDock");
+  const startersEl = $("starters");
 
   let inFlight = false;
   let activeRequest = null;
@@ -963,8 +975,20 @@
       if (on) b.setAttribute("aria-current", "page"); else b.removeAttribute("aria-current");
     });
   }
+  // Relocates the composer dock: inline under the intro on the home screen,
+  // back into the sticky bottom dock once a chat is active. Same pattern as
+  // placeAside() moving the Upcoming aside between layouts.
+  function placeComposer(isHome) {
+    composerDockEl.classList.toggle("is-inline", isHome);
+    if (isHome) {
+      if (composerDockEl.parentElement !== welcomeEl) welcomeEl.insertBefore(composerDockEl, startersEl);
+    } else if (composerDockEl.parentElement !== appEl) {
+      appEl.appendChild(composerDockEl);
+    }
+  }
   function setWelcome(show) {
     welcomeEl.classList.toggle("is-hidden", !show);
+    placeComposer(show);
     if (!show && !mapViewEl.hidden) return;
     setActiveNav(show ? "home" : "ask");
   }
@@ -1248,6 +1272,7 @@
     }
   });
 
+  placeComposer(!welcomeEl.classList.contains("is-hidden"));
   updateCounter(); refreshSendState(); autoGrow();
 </script>
 </body>
