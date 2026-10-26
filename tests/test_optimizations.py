@@ -52,7 +52,8 @@ def test_gemini_failure_returns_none_and_fallbacks(monkeypatch):
         raise RuntimeError("down")
     monkeypatch.setattr(appmod.client.models, "generate_content", boom)
     assert appmod.gemini_text("x", model="m", contents="c") is None
-    assert appmod.classify_query("is there anything happening later at school") == [dict(appmod.UNKNOWN_REQUEST)]
+    with pytest.raises(appmod.ClassificationUnavailable):
+        appmod.classify_query("is there anything happening later at school")
     assert appmod.generate_answer("hi", [], [{"type": "GREETING"}]) == appmod.LLM_FAILURE_REPLY
 
 

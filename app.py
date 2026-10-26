@@ -719,6 +719,14 @@ def quick_classify(user_msg: str) -> list[dict] | None:
     return None
 
 LLM_FAILURE_REPLY = "Sorry — something went wrong on my end. Please try again in a moment 🙂"
+CLASSIFIER_FAILURE_REPLY = (
+    "The AI service is temporarily unavailable. Please try again later. "
+    "Simple questions such as 'block order tomorrow' or 'lunch today' still work."
+)
+
+
+class ClassificationUnavailable(RuntimeError):
+    """The classifier failed; this says nothing about the user's question."""
 
 
 def gemini_text(label: str, **kwargs) -> str | None:
@@ -760,16 +768,16 @@ def classify_query(user_msg: str, memory: str = "") -> list[dict]:
         ),
     )
     if txt is None:
-        return [dict(UNKNOWN_REQUEST)]
+        raise ClassificationUnavailable("Gemini classification call failed")
     try:
         if txt.startswith("```"):
             txt = txt.strip("`").replace("json", "", 1).strip()
 
         try:
             obj = json.loads(txt)
-        except json.JSONDecodeError:
+        except json.JSONDecodeError as exc:
             logger.error("classify_query: Gemini returned unparseable JSON: %.200s", txt)
-            return [dict(UNKNOWN_REQUEST)]
+            raise ClassificationUnavailable("Invalid classifier JSON") from exc
 
         # accept {"requests": [...]}, a bare JSON array, or a single object
         if isinstance(obj, list):
@@ -786,10 +794,14 @@ def classify_query(user_msg: str, memory: str = "") -> list[dict]:
             for item in raw_requests[:MAX_REQUESTS]
             if isinstance(item, dict)
         ]
-        return requests_out or [dict(UNKNOWN_REQUEST)]
-    except Exception:
+        if not requests_out:
+            raise ClassificationUnavailable("Empty classifier result")
+        return requests_out
+    except ClassificationUnavailable:
+        raise
+    except Exception as exc:
         logger.exception("classify_query failed")
-        return [dict(UNKNOWN_REQUEST)]
+        raise ClassificationUnavailable("Invalid classifier response") from exc
 
 # ---------------------------
 # Build grounded result
@@ -1227,7 +1239,15 @@ def chat_events(user_msg: str, memory: str, req_id: str):
         return
 
     yield "status", {"stage": "understanding"}
-    classifications = classify_query(user_msg, memory)
+    try:
+        classifications = classify_query(user_msg, memory)
+    except ClassificationUnavailable:
+        logger.warning("[%s] AI classification unavailable", req_id)
+        capture_unanswered(req_id, user_msg, CLASSIFIER_FAILURE_REPLY,
+                           details="AI classification unavailable")
+        yield "error", {"reply": CLASSIFIER_FAILURE_REPLY, "request_id": req_id,
+                        "code": "ai_unavailable"}
+        return
 
     logger.debug("[%s] CLASSIFICATIONS: %s", req_id, classifications)
 
@@ -1320,7 +1340,7 @@ def chat():
             if event == "reply":
                 return jsonify(payload)
             if event == "error":
-                return jsonify(payload), 500
+                return jsonify(payload), 503 if payload.get("code") == "ai_unavailable" else 500
     except DailyBudgetReached:
         return jsonify(reply=BUDGET_REPLY), 429
     except UsageUnavailable:
