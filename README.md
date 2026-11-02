@@ -21,6 +21,7 @@ This project brings those sources together behind a conversational interface. Th
 | “When does Grade 10 sign in?” | Shared boarding rules and grade-specific exceptions |
 | “What events are coming up?” | Calendar records and curated event highlights |
 | “Where is the library?” | Campus information and the map interface |
+| “When does BIPOC meet?” / “What clubs can I join?” | Reviewed 2026/27 club explanations and meeting announcements |
 
 The interface also includes upcoming events, a campus map, progress updates while an answer is prepared, and a way to report an incorrect response.
 

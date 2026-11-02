@@ -98,7 +98,8 @@ def test_snapshot_has_rogers_houseparent_and_official_sources():
     assert len(data["records"]) > 100
     assert any("Ken Snow" in " ".join(r["facts"]) and "Rogers" in " ".join(r["facts"])
                for r in kb.search_school_knowledge("Rogers houseparent"))
-    assert all(r["source_url"].startswith("https://www.brentwood.ca/") for r in data["records"])
+    public_records = [r for r in data["records"] if r.get("source_type") != "curated_club_email"]
+    assert all(r["source_url"].startswith("https://www.brentwood.ca/") for r in public_records)
     assert len({r["id"] for r in data["records"]}) == len(data["records"])
     assert all(isinstance(r["facts"], list) and r["facts"]
                and all(isinstance(f, str) for f in r["facts"])

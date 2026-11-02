@@ -63,7 +63,7 @@ def test_school_info_payload_drops_retrieval_fields():
     out = appmod.focused_answer_results([{"intent": "SCHOOL_INFO"}],
                                         [{"type": "SCHOOL_INFO", "records": [record]}])[0]
     assert out["checked_on"] == "2026-09-23"
-    assert out["records"] == [{"title": "Rogers House", "facts": ["f"], "source_url": "u"}]
+    assert out["records"] == [{"title": "Rogers House", "facts": ["f"]}]
 
 
 def test_md_escape_matches_previous_rule():

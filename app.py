@@ -436,6 +436,11 @@ Rules for each request:
   "what does Mr Snow teach" => "Ken Snow teacher";
   "what is in the Foote Centre" => "Foote Centre facilities";
   "how do I get help with my laptop" => "Innovations IT repair support".
+  Club descriptions, captains, joining, volunteer opportunities, meeting times
+  and rooms for SAC, B-Well (BWell), BIPOC, Women's Society, BEAT and OMNI
+  are SCHOOL_INFO, including "when is BIPOC", "where does OMNI meet",
+  "BWell 언제 모여", and "what clubs can I join". Preserve the club name
+  in school_query. Club meetings are not academic SCHEDULE or SCHOOL_BREAKS.
   General help-seeking such as "where can I get help", "who can I ask for
   help", or "what support is available at school" is SCHOOL_INFO, not UNKNOWN.
   Use school_query "student support academic help advisors" for a standalone
@@ -1020,6 +1025,23 @@ LOCATION_REPLY = (
     "building name there."
 )
 
+def without_source_citations(value):
+    """Keep provenance in stored records, not in student-facing answer context."""
+    if isinstance(value, list):
+        return [without_source_citations(item) for item in value]
+    if isinstance(value, dict):
+        citation_fields = {"source_url", "travel_source_url", "source_title",
+                           "source_label", "sources"}
+        cleaned = {key: without_source_citations(item) for key, item in value.items()
+                   if key not in citation_fields}
+        if isinstance(cleaned.get("source_conflict"), dict):
+            cleaned["source_conflict"] = {
+                key: item for key, item in cleaned["source_conflict"].items()
+                if key not in {"url", "other_url"}}
+        return cleaned
+    return value
+
+
 def focused_answer_results(classifications: list[dict], results: list[dict]) -> list[dict]:
     """Keep unrequested details out of both answer data and selected rules."""
     focused = []
@@ -1046,20 +1068,24 @@ def focused_answer_results(classifications: list[dict], results: list[dict]) -> 
                                        if k not in {"menu_content", "menu_items"}}
                                       for row in result.get("meal_signins", [])]
         elif intent == "SCHOOL_INFO":
-            # Retrieval-only fields (keywords/id/category) cost prompt tokens; checked_on is
-            # the same on every record, so state it once.
+            # Omit retrieval-only fields. Share the review date only when all
+            # records agree; club and website snapshots can have different dates.
             records = result.get("records", [])
-            if records:
+            omitted = {"keywords", "id", "category"}
+            if records and len({r.get("checked_on") for r in records}) == 1:
                 result["checked_on"] = records[0].get("checked_on")
+                omitted.add("checked_on")
+            else:
+                result.pop("checked_on", None)
             result["records"] = [{k: v for k, v in r.items()
-                                  if k not in {"keywords", "id", "category", "checked_on"}}
+                                  if k not in omitted}
                                  for r in records]
         elif intent == "SCHEDULE":
             focus = validate_request({**cls, "intent": intent})["schedule_focus"]
             result["schedule_focus"] = focus
             if focus != "FULL_DAY":
                 result.pop("afternoon", None)
-        focused.append(result)
+        focused.append(without_source_citations(result))
     return focused
 
 
