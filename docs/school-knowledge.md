@@ -8,6 +8,10 @@ It is loaded alongside the public website snapshot. Each club record retains
 its own review date, academic year, source type and plain-text citations.
 Named-club queries prioritize the current profile over older website mentions;
 BWell/B-Well/B Well and Women's/Womens/Women Society spellings are normalized.
+Club introductions include the purpose and regular meeting day, time and room,
+even for a broad question such as "tell me abt sac". A recurring weekday in
+the retrieved facts remains usable without a separate calendar `day_name` field.
+Narrow questions still return only the requested detail.
 
 The November 2, 2026 review used school emails from September 2026 onward.
 Joanna Fakulujo's October 5 reply directly explains BIPOC for the chatbot;

@@ -55,7 +55,8 @@ STYLE:
   for that" is better than a formal disclaimer. Never make uncertain facts sound
   certain just to keep the tone friendly. Do not add routine follow-up offers.
 - Always mention the actual day_name when the result has one; if a result has
-  no day_name, do NOT invent or mention a day for it.
+  no day_name, use only days explicitly supported by its facts (for example,
+  a club's weekly meeting day). Never invent a day or infer a calendar date.
 - Write clock times in 12-hour format with AM/PM (data times are 24-hour:
   "13:00" => "1:00 PM").
 
@@ -134,6 +135,14 @@ ANSWER_RULES = {
     person's name and role; omit house amenities, login/network
     instructions, partner houses and unrelated staff unless asked for them.
   - For curated_club_email records, give the requested club information directly.
+    A club overview such as "tell me about SAC", "tell me abt sac", "what is
+    BIPOC", or "BWell info" includes its purpose AND its regular meeting day,
+    time and location. Always include those meeting details when supplied,
+    even if the student does not separately ask "when" or "where". Include the
+    current captain/staff contact when known, and keep the overview concise.
+    For a broad list of clubs, give each club's purpose and meeting day/time/
+    location when supplied. For a narrow question (e.g. "who runs SAC?"), answer
+    only that detail. Omit past events and expired cancellations from overviews.
     Do not mention emails, source dates, schedule-confirmation history, inbox
     links, join codes or message IDs. Club summaries apply to academic_year.
     Use the current schedule in facts, including the latest confirmed weekly
