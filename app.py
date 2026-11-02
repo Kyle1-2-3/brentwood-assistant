@@ -26,7 +26,7 @@ from school_knowledge import search_school_knowledge
 from school_calendar import calendar_result, leave_on
 from school_events import upcoming_events as prioritize_upcoming_events
 from answer_prompts import answer_system_for, ENGLISH_ONLY_INSTRUCTION
-from sync_schedule import SCHOOL_TZ, today, complete_common_timetable, apply_timetable_overrides
+from sync_schedule import SCHOOL_TZ, today, complete_common_timetable, apply_timetable_overrides, is_personal_sport
 
 load_dotenv()
 
@@ -331,7 +331,8 @@ def fetch_timeline_by_date(sched_date: str) -> list[dict]:
     # Repair older personal-feed snapshots at read time as well as during sync.
     complete_common_timetable(by_date)
     apply_timetable_overrides(by_date)
-    return by_date[sched_date]
+    return [row for row in by_date[sched_date]
+            if not (row["item_type"] == "EVENT" and is_personal_sport(row.get("event_name")))]
 
 def fetch_next_event(item_type: str, from_date: str) -> list[dict]:
     """Nearest upcoming occurrence (on/after from_date) of a named timeline event."""

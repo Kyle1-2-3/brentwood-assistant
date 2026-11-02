@@ -12,6 +12,11 @@ Club introductions include the purpose and regular meeting day, time and room,
 even for a broad question such as "tell me abt sac". A recurring weekday in
 the retrieved facts remains usable without a separate calendar `day_name` field.
 Narrow questions still return only the requested detail.
+All club overviews use the same three sections in order: **About** (brief
+purpose), **People** (one bullet per confirmed role/contact), then
+**Place & Time** (location followed by weekly day/time). Bare club names and
+misspellings use the same layout; names, purpose and meeting details stay in
+their own sections.
 
 The November 2, 2026 review used school emails from September 2026 onward.
 Joanna Fakulujo's October 5 reply directly explains BIPOC for the chatbot;

@@ -40,6 +40,12 @@ PERSONAL_COUNSELLING_F = re.compile(r"University\s+Counsell?ing\s*[-–]\s*F\d*"
 COCURRICULAR = re.compile(
     r"Attendance Blk| - (?:Fall|Winter|Spring|Summer)$|Rock Band \(\d+\)$", re.I
 )
+PERSONAL_SPORT = re.compile(r"\b(?:XC|(?:Cross|X)[\s\-–—]*Country)\b", re.I)
+
+
+def is_personal_sport(summary: str | None) -> bool:
+    """The feed owner's XC practices/races/trips are not a shared timetable."""
+    return bool(PERSONAL_SPORT.search(summary or ""))
 
 # Official common timetable, verified 2026-09-23:
 # https://www.brentwood.ca/why-brentwood/unique-timetable/
@@ -207,6 +213,8 @@ def parse_ical(text: str) -> dict[str, list[dict]]:
         dtstart = fields.get("DTSTART", "")
         dtend = fields.get("DTEND", "")
         if not summary or not dtstart or fields.get("STATUS") == "CANCELLED":
+            continue
+        if is_personal_sport(summary):
             continue
 
         m = BLOCK_SUFFIX.search(summary)

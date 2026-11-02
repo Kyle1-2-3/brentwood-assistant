@@ -140,6 +140,31 @@ ANSWER_RULES = {
     time and location. Always include those meeting details when supplied,
     even if the student does not separately ask "when" or "where". Include the
     current captain/staff contact when known, and keep the overview concise.
+    Every club overview, including a bare club name or a typo such as
+    "women;s society", MUST use these three bold section labels in this exact
+    order, with a blank line between sections:
+
+    **About**
+    One or two short sentences explaining what the club does.
+
+    **People**
+    - **[Role]:** [Name or names]
+
+    **Place & Time**
+    - **Location:** [Room and building]
+    - **Time:** [Weekly day and start/end time when known]
+
+    Start the reply immediately with **About**; output only these three sections,
+    with no greeting or introductory line before About and nothing after Time.
+    For club overviews, omit emojis despite the general warmth/emoji guidance.
+    Replace every placeholder with supported facts. Give each distinct people
+    role its own bullet; use "Contact" when a captain/sponsor role is not
+    confirmed. Keep purpose only in About, names/roles only in People, and
+    meeting details only in Place & Time. Use the same labels for all clubs;
+    do not add an academic-year preamble, extra headings, emojis or a closing
+    paragraph. The three-section format takes precedence over general style
+    rules for club overviews. For several club overviews, repeat this structure
+    under each club's name.
     For a broad list of clubs, give each club's purpose and meeting day/time/
     location when supplied. For a narrow question (e.g. "who runs SAC?"), answer
     only that detail. Omit past events and expired cancellations from overviews.

@@ -52,6 +52,55 @@ def test_regular_activities_are_excluded(title):
     assert ss.parse_ical(calendar(f"SUMMARY:{title}\nDTSTART:20260923T210000Z")) == {}
 
 
+@pytest.mark.parametrize("title", [
+    "XC - Destination Goldstream", "xc - Glenora Trails Head Race",
+    "Cross Country practice", "Cross-country Meet", "X Country trip", "XC-A",
+])
+def test_personal_xc_sport_is_excluded_before_block_or_event_classification(title):
+    assert ss.parse_ical(calendar(f"SUMMARY:{title}\nDTSTART:20261103T210000Z")) == {}
+
+
+def test_xc_all_day_trip_is_excluded_without_removing_other_events():
+    rows = ss.parse_ical(calendar(
+        "SUMMARY:XC Championships\nDTSTART;VALUE=DATE:20261103\nDTEND;VALUE=DATE:20261104",
+        "SUMMARY:XCEL Leadership Workshop\nDTSTART:20261103T210000Z",
+    ))["2026-11-03"]
+    assert [r["event_name"] for r in rows] == ["XCEL Leadership Workshop"]
+
+
+def test_old_xc_rows_are_hidden_from_schedule_answers_but_common_blocks_remain(tmp_path, monkeypatch):
+    path = tmp_path / "school.db"
+    with sqlite3.connect(path) as conn:
+        conn.execute("CREATE TABLE ScheduleTimeline (sched_date TEXT, item_type TEXT, block_code TEXT, start_time TEXT, end_time TEXT, item_order INTEGER, event_name TEXT, all_day INTEGER)")
+        conn.executemany("INSERT INTO ScheduleTimeline VALUES (?,?,?,?,?,?,?,?)", [
+            ("2026-11-03", "BLOCK", "D", "10:25", "11:45", 1, None, 0),
+            ("2026-11-03", "BLOCK", "E", "11:55", "13:15", 2, None, 0),
+            ("2026-11-03", "EVENT", None, "14:00", "16:28", 3, "XC - Destination Goldstream", 0),
+            ("2026-11-03", "EVENT", None, "17:00", "18:00", 4, "Community Fair", 0),
+        ])
+    monkeypatch.setattr(appmod, "DB_PATH", str(path))
+    monkeypatch.setattr(appmod, "today", lambda: date(2026, 11, 2))
+    monkeypatch.setattr(appmod, "leave_on", lambda _: None)
+    rows = appmod.fetch_timeline_by_date("2026-11-03")
+    assert [r["block_code"] for r in rows if r["item_type"] == "BLOCK"] == ["F", "D", "E"]
+    assert [r["event_name"] for r in rows if r["item_type"] == "EVENT"] == ["Community Fair"]
+
+    def unexpected(*args, **kwargs):
+        pytest.fail("Simple block-order questions should use the direct answer")
+
+    monkeypatch.setattr(appmod.client.models, "generate_content", unexpected)
+    response = appmod.app.test_client().post("/chat", json={"message": "block order tomorrow"})
+    assert response.status_code == 200
+    reply = response.get_json()["reply"]
+    assert "Block F" in reply and "Community Fair" in reply
+    assert "XC" not in reply and "Goldstream" not in reply
+    full_day = appmod.build_result_from_classification(
+        {"intent": "SCHEDULE", "day_ref": "TOMORROW", "schedule_focus": "FULL_DAY"},
+        "What is the full schedule tomorrow?"
+    )
+    assert not any("XC" in (r.get("event_name") or "") for r in full_day["rows"])
+
+
 @pytest.mark.parametrize("title", ["University Counselling-F1", "University Counseling-F1"])
 def test_personal_counselling_becomes_common_f_block(title):
     row = ss.parse_ical(calendar(

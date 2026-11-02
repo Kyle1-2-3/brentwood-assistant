@@ -65,6 +65,10 @@ Other events retain their title and time, including all-day events. Regular
 attendance-block activities, seasonal sports and the old numbered Rock Band
 classes are excluded. Personal events remain separate from school block rows
 and are not necessarily school-wide or a cancellation of the common block.
+The owner explicitly identified XC as their personal sport. XC/cross-country
+practice, race and trip entries are excluded from imports and from answer-time
+reads of older snapshots. They must not appear in shared timetable answers.
+Other school events and the academic F block are retained.
 
 A successful fetch replaces all upcoming rows so cancelled/removed events do
 not linger. A fetch failure, non-calendar response or parse failure preserves the

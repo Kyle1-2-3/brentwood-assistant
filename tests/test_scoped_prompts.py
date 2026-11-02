@@ -15,7 +15,7 @@ def timetable():
         {"item_type": "ASSEMBLY", "start_time": "09:55", "end_time": "10:20"},
         {"item_type": "BLOCK", "block_code": "E", "start_time": "10:25", "end_time": "11:45"},
         {"item_type": "BLOCK", "block_code": "F", "start_time": "11:55", "end_time": "13:15"},
-        {"item_type": "EVENT", "event_name": "XC - Glenora Trails Head Race",
+        {"item_type": "EVENT", "event_name": "Community Fair",
          "start_time": "14:00", "end_time": "16:30"},
     ]
 
@@ -32,7 +32,7 @@ def test_block_order_returns_class_times_and_events_without_model(monkeypatch):
     reply = response.get_json()["reply"]
     assert "Here's the class timetable for **Thursday**" in reply
     for expected in ("Block D", "Block E", "Block F", "8:15 AM", "1:15 PM", "Cookie Break",
-                     "Assembly", "Events", "XC - Glenora Trails Head Race", "4:30 PM"):
+                     "Assembly", "Events", "Community Fair", "4:30 PM"):
         assert expected in reply
     for unasked in ("Sport Day", "Art Day", "MySchool", "6:00 PM", "sign-in"):
         assert unasked not in reply
