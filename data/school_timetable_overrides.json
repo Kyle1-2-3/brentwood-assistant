@@ -1,0 +1,20 @@
+{
+  "checked_on": "2026-11-02",
+  "timezone": "America/Vancouver",
+  "overrides": {
+    "2026-11-05": {
+      "source_type": "school_announcement",
+      "source_title": "Remembrance Day Service Protocols - Thursday, November 5",
+      "source_date": "2026-11-02",
+      "source_author": "Ron Neufeld, Deputy Head - Campus Life",
+      "scope": "School-wide morning timetable for this date only; replaces the regular Thursday morning.",
+      "rows": [
+        {"item_type": "BLOCK", "block_code": "E", "start_time": "08:15", "end_time": "09:20"},
+        {"item_type": "COOKIE_BREAK", "block_code": null, "start_time": "09:20", "end_time": "09:35"},
+        {"item_type": "BLOCK", "block_code": "F", "start_time": "09:35", "end_time": "10:40"},
+        {"item_type": "EVENT", "block_code": null, "event_name": "Remembrance Day Service", "all_day": 0, "start_time": "10:45", "end_time": "12:00"},
+        {"item_type": "BLOCK", "block_code": "D", "start_time": "12:05", "end_time": "13:15"}
+      ]
+    }
+  }
+}

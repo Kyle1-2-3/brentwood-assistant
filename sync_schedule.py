@@ -14,11 +14,14 @@ dated academic periods uniquely match the school's published rotation and times.
 Set MSM_ICAL_URL in .env. Run from the repo root: python sync_schedule.py
 """
 import os
+import json
 import re
 import ssl
 import sqlite3
 import urllib.request
 from datetime import datetime, timezone, date, timedelta
+from functools import lru_cache
+from pathlib import Path
 from zoneinfo import ZoneInfo
 
 import certifi
@@ -29,6 +32,7 @@ from net_retry import with_retry
 load_dotenv()
 
 DB_PATH = os.path.join("db", "school.db")
+TIMETABLE_OVERRIDES_PATH = Path(__file__).resolve().parent / "data" / "school_timetable_overrides.json"
 SCHOOL_TZ = ZoneInfo("America/Vancouver")
 
 BLOCK_SUFFIX = re.compile(r"-([A-F])$")
@@ -46,6 +50,34 @@ REGULAR_PERIODS = (("08:15", "09:35"), ("10:25", "11:45"), ("11:55", "13:15"))
 WEDNESDAY_PERIODS = (("09:30", "10:35"), ("10:55", "12:00"), ("12:10", "13:15"))
 SATURDAY_PERIODS = (("10:15", "11:00"), ("11:10", "11:55"), ("12:05", "12:50"))
 COMMON_NAMED_ITEMS = {0: "ADVISORY", 1: "TUTORIAL", 3: "ASSEMBLY", 4: "TUTORIAL"}
+COMMON_TIMELINE_TYPES = {"BLOCK", "COOKIE_BREAK", "ADVISORY", "TUTORIAL", "ASSEMBLY", "INSPECTION"}
+
+
+@lru_cache(maxsize=1)
+def load_timetable_overrides() -> dict:
+    """Reviewed, date-specific school announcements; no personal appointments."""
+    return json.loads(TIMETABLE_OVERRIDES_PATH.read_text(encoding="utf-8"))["overrides"]
+
+
+def apply_timetable_overrides(by_date: dict[str, list[dict]], *, include_missing: bool = False) -> None:
+    """Replace a dated common morning while preserving unrelated feed events.
+
+    A published special timetable can establish a missing personal free period
+    even when its bell times do not match the ordinary rotation template.
+    Provenance stays in the reviewed JSON and is never copied into answer rows.
+    """
+    for date_key, override in load_timetable_overrides().items():
+        if date_key not in by_date and not include_missing:
+            continue
+        announced = [dict(row) for row in override["rows"]]
+        event_names = {(r.get("event_name") or "").strip().casefold()
+                       for r in announced if r["item_type"] == "EVENT"}
+        retained = [r for r in by_date.get(date_key, [])
+                    if r["item_type"] not in COMMON_TIMELINE_TYPES
+                    and not (r["item_type"] == "EVENT"
+                             and (r.get("event_name") or "").strip().casefold() in event_names)]
+        by_date[date_key] = retained + announced
+        renumber(by_date[date_key])
 
 
 def renumber(rows: list[dict]) -> None:
@@ -237,9 +269,14 @@ def add_fixed_timeline_items(by_date: dict[str, list[dict]]) -> None:
     Saturday inspection). Only school days already in the feed get them; each
     affected day is then renumbered by time so item_order stays sequential."""
     for date_key, rows in by_date.items():
-        if not any(r["item_type"] == "BLOCK" for r in rows):
+        blocks = [r for r in rows if r["item_type"] == "BLOCK"]
+        if not blocks:
             continue  # an event-only day must not invent a normal school timetable
-        items = FIXED_TIMELINE_ITEMS.get(date.fromisoformat(date_key).weekday())
+        weekday = date.fromisoformat(date_key).weekday()
+        periods = WEDNESDAY_PERIODS if weekday == 2 else SATURDAY_PERIODS if weekday == 5 else REGULAR_PERIODS
+        if any((r["start_time"], r["end_time"]) not in periods for r in blocks):
+            continue  # modified bell times require explicit breaks, too
+        items = FIXED_TIMELINE_ITEMS.get(weekday)
         if not items:
             continue
         for item_type, start, end in items:
@@ -306,6 +343,7 @@ def main():
         raise ValueError("MySchool did not return an iCalendar feed; existing schedule preserved")
     by_date = parse_ical(text)
     completed = complete_common_timetable(by_date)
+    apply_timetable_overrides(by_date, include_missing=True)
     add_fixed_timeline_items(by_date)
     conn = sqlite3.connect(DB_PATH)
     stats = apply_schedule(conn, by_date, from_date=today())

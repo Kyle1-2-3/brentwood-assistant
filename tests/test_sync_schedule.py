@@ -176,7 +176,7 @@ def test_cookie_break_monday_morning():
 
 def test_cookie_break_wednesday_later_slot():
     by_date = {"2026-04-22": [  # Wednesday
-        {"item_type": "BLOCK", "block_code": "A", "start_time": "08:15", "end_time": "09:35", "item_order": 1},
+        {"item_type": "BLOCK", "block_code": "A", "start_time": "09:30", "end_time": "10:35", "item_order": 1},
     ]}
     ss.add_fixed_timeline_items(by_date)
     cb = [r for r in by_date["2026-04-22"] if r["item_type"] == "COOKIE_BREAK"][0]

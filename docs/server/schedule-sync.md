@@ -38,6 +38,29 @@ personal free period still requires a school-wide exception source; this is a
 regular common timetable, not proof of a student's enrolment or attendance.
 Check this published template if the school changes its rotation or bell times.
 
+## Published special timetables and personal spare periods
+
+`data/school_timetable_overrides.json` stores reviewed school-wide timetables for
+specific dates. These replace the normal morning blocks and named periods,
+including breaks, while preserving unrelated calendar events. They apply only
+to their exact date and never repeat on later weekdays. Source metadata stays
+internal; personal appointments must not be used to infer common class times.
+An explicitly announced date can be restored even if absent from the personal
+feed. Add or update an override only after reviewing the school's announcement.
+
+The November 2 announcement from Ron Neufeld supplies the November 5, 2026
+Remembrance Day timetable: E 08:15–09:20, cookie break 09:20–09:35,
+F 09:35–10:40, service 10:45–12:00, D 12:05–13:15. The feed owner's spare F
+is omitted from their calendar, and the shortened E/D periods cannot match
+the normal bell-time template. The dated announcement supplies the missing F
+and correct break without guessing. Unreviewed modified mornings remain
+incomplete and no longer receive an assumed normal cookie-break time.
+
+Both synchronization and answer-time reads apply common-block completion and
+the published overrides. This also repairs incomplete stored snapshots before
+the next sync. A student's own class/free-period assignments still belong in
+MySchool; the chatbot displays the common school timetable.
+
 Other events retain their title and time, including all-day events. Regular
 attendance-block activities, seasonal sports and the old numbered Rock Band
 classes are excluded. Personal events remain separate from school block rows
