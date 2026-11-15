@@ -3,6 +3,7 @@ flask-limiter
 python-dotenv
 google-genai>=1.55
 gunicorn
+httpx
 certifi
 tzdata>=2026.2
 pytest
