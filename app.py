@@ -48,6 +48,8 @@ logger = logging.getLogger("chatbot")
 
 app = Flask(__name__, static_url_path="", static_folder="static")
 app.config.update(
+    ACCESS_GATE_ENABLED=True,
+    SITE_PASSWORD_HASH=os.getenv("SITE_PASSWORD_HASH", ""),
     MAX_CONTENT_LENGTH=64 * 1024,
     USAGE_LIMITS_ENABLED=True,
     USER_DAILY_LIMIT=int(os.getenv("USER_DAILY_LIMIT", "300")),
@@ -127,6 +129,9 @@ def client_ip() -> str:
     return get_remote_address()
 
 limiter = Limiter(client_ip, app=app, storage_uri="memory://")
+
+from access_gate import install_access_gate
+install_access_gate(app, usage_store, client_ip)
 
 @app.errorhandler(429)
 def ratelimit_handler(e):

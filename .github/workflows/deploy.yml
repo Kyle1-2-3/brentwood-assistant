@@ -66,5 +66,8 @@ jobs:
             sudo systemctl enable sync-schedule.timer sync-menus.timer
             sudo systemctl restart sync-schedule.timer sync-menus.timer
             sudo systemctl restart chatbot
+            sudo install -m 644 docs/server/00-chatbot.conf /etc/nginx/conf.d/00-chatbot.conf
+            sudo nginx -t
+            sudo systemctl reload nginx
             sleep 1
             systemctl is-active chatbot sync-schedule.timer sync-menus.timer
