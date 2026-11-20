@@ -71,7 +71,7 @@ GEMINI_API_KEY=your_api_key_here
 SITE_PASSWORD_HASH=your_werkzeug_password_hash_here
 ```
 
-Generate `SITE_PASSWORD_HASH` with `werkzeug.security.generate_password_hash` from a password entered with `getpass.getpass()`; store only the resulting hash in `.env`. The site fails closed when this setting is missing. All pages, assets and APIs require a signed access cookie, valid for seven days. Changing the password hash invalidates existing cookies. Login attempts are limited to ten per IP per fifteen minutes using the shared usage store. `POST /logout` clears the access cookie. Existing administrator authentication remains required for feedback administration.
+Generate `SITE_PASSWORD_HASH` with `werkzeug.security.generate_password_hash` from a password entered with `getpass.getpass()`; store only the resulting hash in `.env`. The site fails closed when this setting is missing. Each new visit or refresh requires the password. A successful password submission grants a single page load with a short-lived, single-use entry cookie. A separate browser-session cookie authorizes assets and APIs while using the page (with a maximum server validity of seven days); it cannot unlock another visit. Changing the password hash invalidates existing cookies. Login attempts are limited to ten per IP per fifteen minutes using the shared usage store. `POST /logout` clears the access cookie. Existing administrator authentication remains required for feedback administration.
 
 Production Nginx must proxy pages and assets to Flask as in `docs/server/00-chatbot.conf`; serving the static directory directly bypasses the page gate. After installing this configuration, run `nginx -t` before reloading Nginx.
 

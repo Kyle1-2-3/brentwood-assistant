@@ -2,6 +2,12 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8" />
+<script>
+// A page restored from the back/forward cache must pass the entry gate again.
+window.addEventListener("pageshow", (event) => {
+  if (event.persisted) window.location.reload();
+});
+</script>
 <!-- interactive-widget: shrink the layout when the keyboard opens so the
      sticky composer lands on top of it (Android Chrome pans instead by default) -->
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, interactive-widget=resizes-content" />

@@ -3,12 +3,14 @@ import hashlib
 import hmac
 import sqlite3
 import time
+import secrets
 
-from flask import jsonify, redirect, render_template, request
+from flask import jsonify, redirect, render_template, request, g
 from itsdangerous import BadSignature, URLSafeTimedSerializer
 from werkzeug.security import check_password_hash
 
 COOKIE = "brentwood_access"
+ENTRY_COOKIE = "brentwood_entry"
 MAX_AGE = 7 * 86400
 
 
@@ -30,6 +32,17 @@ def install_access_gate(app, store, client_ip):
         try:
             token = signer().loads(request.cookies.get(COOKIE, ""), max_age=MAX_AGE)
             if isinstance(token, str) and hmac.compare_digest(token, fingerprint()):
+                if request.path in ("/", "/index.html"):
+                    # A password grants exactly one document load. Existing API
+                    # cookies cannot unlock a new tab, revisit, or refresh.
+                    g.consume_entry = True
+                    entry = URLSafeTimedSerializer(store.signing_key(), salt=ENTRY_COOKIE).loads(
+                        request.cookies.get(ENTRY_COOKIE, ""), max_age=60)
+                    if not isinstance(entry, str):
+                        raise BadSignature("Invalid entry")
+                    now = int(time.time())
+                    if store.reserve([(f"entry:{entry}", 1, now + 120)], now):
+                        raise BadSignature("Entry already used")
                 return None
         except BadSignature:
             pass
@@ -44,6 +57,8 @@ def install_access_gate(app, store, client_ip):
         if app.config["ACCESS_GATE_ENABLED"]:
             response.headers["Cache-Control"] = "private, no-store"
             response.vary.add("Cookie")
+        if getattr(g, "consume_entry", False):
+            response.delete_cookie(ENTRY_COOKIE)
         return response
 
     @app.route("/login", methods=["GET", "POST"])
@@ -63,7 +78,11 @@ def install_access_gate(app, store, client_ip):
                 password = request.form.get("password", "")
                 if len(password) <= 256 and check_password_hash(app.config["SITE_PASSWORD_HASH"], password):
                     response = redirect("/", code=303)
-                    response.set_cookie(COOKIE, signer().dumps(fingerprint()), max_age=MAX_AGE,
+                    response.set_cookie(COOKIE, signer().dumps(fingerprint()),
+                                        httponly=True, samesite="Lax",
+                                        secure=request.is_secure or request.headers.get("X-Forwarded-Proto") == "https")
+                    response.set_cookie(ENTRY_COOKIE,
+                                        URLSafeTimedSerializer(store.signing_key(), salt=ENTRY_COOKIE).dumps(secrets.token_hex(24)),
                                         httponly=True, samesite="Lax",
                                         secure=request.is_secure or request.headers.get("X-Forwarded-Proto") == "https")
                     return response
@@ -77,4 +96,5 @@ def install_access_gate(app, store, client_ip):
     def access_logout():
         response = redirect("/login", code=303)
         response.delete_cookie(COOKIE)
+        response.delete_cookie(ENTRY_COOKIE)
         return response

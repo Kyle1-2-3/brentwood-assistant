@@ -1,7 +1,7 @@
 import pytest
 from werkzeug.security import generate_password_hash
 from flask import Flask
-from access_gate import COOKIE, install_access_gate
+from access_gate import COOKIE, ENTRY_COOKIE, install_access_gate
 from usage_limits import UsageStore
 
 
@@ -68,3 +68,20 @@ def test_attempt_limit_is_shared_and_missing_config_fails_closed(gated):
 def test_cross_origin_login_rejected(gated):
     _, client, _ = gated
     assert client.post("/login", data={"password": "test-pass"}, headers={"Origin": "https://other.example"}).status_code == 403
+
+
+def test_each_visit_requires_password_and_entry_cannot_replay(gated):
+    _, client, _ = gated
+    response = client.post("/login", data={"password": "test-pass"})
+    assert all("Max-Age" not in value and "Expires" not in value
+               for value in response.headers.getlist("Set-Cookie"))
+    ticket = client.get_cookie(ENTRY_COOKIE).value
+    assert client.get("/").status_code == 200
+    assert client.post("/chat").status_code == 200
+    assert client.get("/").status_code == 303
+    assert client.get("/index.html").status_code == 303
+    client.set_cookie(ENTRY_COOKIE, ticket)
+    assert client.get("/").status_code == 303
+    client.post("/login", data={"password": "test-pass"})
+    assert client.get("/").status_code == 200
+    assert client.get("/").status_code == 303
