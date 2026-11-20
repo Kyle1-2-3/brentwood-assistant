@@ -12,6 +12,10 @@ from werkzeug.security import check_password_hash
 COOKIE = "brentwood_access"
 ENTRY_COOKIE = "brentwood_entry"
 MAX_AGE = 7 * 86400
+# "Remember this browser": a persistent cookie that opens the page without a
+# single-use entry ticket. Still bound to the current password hash.
+REMEMBER_AGE = 30 * 86400
+REMEMBER_SUFFIX = ":remember"
 
 
 def install_access_gate(app, store, client_ip):
@@ -20,6 +24,17 @@ def install_access_gate(app, store, client_ip):
 
     def fingerprint():
         return hashlib.sha256(app.config["SITE_PASSWORD_HASH"].encode()).hexdigest()
+
+    def access_token():
+        """(valid, remembered) for the access cookie; raises BadSignature when invalid."""
+        cookie = request.cookies.get(COOKIE, "")
+        token = signer().loads(cookie, max_age=REMEMBER_AGE)
+        if not isinstance(token, str):
+            raise BadSignature("Invalid access token")
+        remembered = token.endswith(REMEMBER_SUFFIX)
+        if not remembered:
+            signer().loads(cookie, max_age=MAX_AGE)  # session cookies expire sooner
+        return hmac.compare_digest(token.removesuffix(REMEMBER_SUFFIX), fingerprint()), remembered
 
     @app.before_request
     def require_access():
@@ -30,9 +45,9 @@ def install_access_gate(app, store, client_ip):
         if request.endpoint == "access_login":
             return None
         try:
-            token = signer().loads(request.cookies.get(COOKIE, ""), max_age=MAX_AGE)
-            if isinstance(token, str) and hmac.compare_digest(token, fingerprint()):
-                if request.path in ("/", "/index.html"):
+            valid, remembered = access_token()
+            if valid:
+                if request.path in ("/", "/index.html") and not remembered:
                     # A password grants exactly one document load. Existing API
                     # cookies cannot unlock a new tab, revisit, or refresh.
                     g.consume_entry = True
@@ -78,13 +93,16 @@ def install_access_gate(app, store, client_ip):
                 password = request.form.get("password", "")
                 if len(password) <= 256 and check_password_hash(app.config["SITE_PASSWORD_HASH"], password):
                     response = redirect("/", code=303)
+                    secure = request.is_secure or request.headers.get("X-Forwarded-Proto") == "https"
+                    if request.form.get("remember"):
+                        response.set_cookie(COOKIE, signer().dumps(fingerprint() + REMEMBER_SUFFIX),
+                                            max_age=REMEMBER_AGE, httponly=True, samesite="Lax", secure=secure)
+                        return response
                     response.set_cookie(COOKIE, signer().dumps(fingerprint()),
-                                        httponly=True, samesite="Lax",
-                                        secure=request.is_secure or request.headers.get("X-Forwarded-Proto") == "https")
+                                        httponly=True, samesite="Lax", secure=secure)
                     response.set_cookie(ENTRY_COOKIE,
                                         URLSafeTimedSerializer(store.signing_key(), salt=ENTRY_COOKIE).dumps(secrets.token_hex(24)),
-                                        httponly=True, samesite="Lax",
-                                        secure=request.is_secure or request.headers.get("X-Forwarded-Proto") == "https")
+                                        httponly=True, samesite="Lax", secure=secure)
                     return response
             except (OSError, sqlite3.Error):
                 return render_template("login.html", error="Sign-in is temporarily unavailable. Please try again shortly."), 503

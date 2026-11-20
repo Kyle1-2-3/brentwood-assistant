@@ -2,9 +2,10 @@
 <html lang="en">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="color-scheme" content="dark light">
-<title>Brentwood Assistant</title>
+<meta name="robots" content="noindex">
+<title>Sign in · Brentwood Assistant</title>
 <!-- Same theme rule as the app: follow the OS unless the student chose one
      with the sidebar toggle (saved as localStorage "theme"). -->
 <script>
@@ -16,28 +17,80 @@
   })();
 </script>
 <style>
-:root{--bg:#0f0f11;--box:#171719;--line:#303034;--line-focus:#68686e;--text:#ececee;--btn:#28282c;--btn-hover:#38383e;--btn-text:#d4d4da;--btn-text-hover:#fff;--focus:#96969e;--red:#c8102e;--scheme:dark}
-@media (prefers-color-scheme:light){:root:not([data-theme="dark"]){--bg:#ffffff;--box:#f5f5f7;--line:#cfcfd4;--line-focus:#8a8d94;--text:#1a1a1d;--btn:#e3e3e7;--btn-hover:#d6d6db;--btn-text:#3a3a40;--btn-text-hover:#000;--focus:#6b6e75;--scheme:light}}
-:root[data-theme="light"]{--bg:#ffffff;--box:#f5f5f7;--line:#cfcfd4;--line-focus:#8a8d94;--text:#1a1a1d;--btn:#e3e3e7;--btn-hover:#d6d6db;--btn-text:#3a3a40;--btn-text-hover:#000;--focus:#6b6e75;--scheme:light}
-*{box-sizing:border-box}
-body{margin:0;background:var(--bg);min-height:100svh;display:grid;place-items:center;padding:28px;color:var(--text);color-scheme:var(--scheme)}
-form{display:flex;align-items:center;width:min(100%,320px);height:58px;padding:6px;border:1px solid var(--line);border-radius:14px;background:var(--box);transition:border-color .18s}
-form:focus-within{border-color:var(--line-focus)}
-form.invalid{border-color:var(--red)}
-input{min-width:0;flex:1;width:100%;height:100%;padding:0 14px;background:transparent;border:0;outline:none;color:var(--text);font:20px -apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;letter-spacing:5px}
-button{display:grid;place-items:center;flex:none;width:44px;height:44px;padding:0;border:0;border-radius:9px;background:var(--btn);color:var(--btn-text);cursor:pointer;transition:background .18s,color .18s}
-button:hover{background:var(--btn-hover);color:var(--btn-text-hover)}
-button:focus-visible{outline:2px solid var(--focus);outline-offset:3px}
-svg{width:20px;height:20px}
-.sr-only{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0}
+  /* Tokens mirror static/index.html so the gate matches the app behind it. */
+  :root {
+    --bg: #0f0f11; --bg-2: #151517; --bg-3: #1c1c1f;
+    --text: #ececee; --muted: #9b9ea6; --dim: #6b6e75;
+    --line: rgba(255,255,255,0.08); --line-strong: rgba(255,255,255,0.16);
+    --red: #c8102e; --red-hover: #d9203d; --warn: #ff7a6e;
+    --focus: 0 0 0 2px var(--bg), 0 0 0 4px var(--line-strong);
+    --scheme: dark;
+    --font: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  }
+  @media (prefers-color-scheme: light) {
+    :root:not([data-theme="dark"]) {
+      --bg: #ffffff; --bg-2: #f5f5f7; --bg-3: #ebebee;
+      --text: #1a1a1d; --muted: #5c5f66; --dim: #8a8d94;
+      --line: rgba(0,0,0,0.08); --line-strong: rgba(0,0,0,0.16);
+      --warn: #c0392b; --scheme: light;
+    }
+  }
+  :root[data-theme="light"] {
+    --bg: #ffffff; --bg-2: #f5f5f7; --bg-3: #ebebee;
+    --text: #1a1a1d; --muted: #5c5f66; --dim: #8a8d94;
+    --line: rgba(0,0,0,0.08); --line-strong: rgba(0,0,0,0.16);
+    --warn: #c0392b; --scheme: light;
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; min-height: 100%; }
+  body {
+    min-height: 100svh; display: grid; place-items: center; padding: 28px 16px;
+    background: var(--bg); color: var(--text); color-scheme: var(--scheme);
+    font: 15px/1.5 var(--font); -webkit-font-smoothing: antialiased;
+  }
+  main { width: 100%; max-width: 380px; }
+  .brand { display: flex; flex-direction: column; align-items: center; gap: 12px; margin-bottom: 26px; text-align: center; }
+  .brand img { width: 56px; height: 56px; }
+  h1 { font-size: 22px; font-weight: 600; letter-spacing: -0.01em; margin: 0; line-height: 1.2; }
+  .lead { color: var(--muted); font-size: 14px; margin: 0; max-width: 32ch; }
+  label.field { display: block; font-size: 13px; font-weight: 500; color: var(--muted); margin: 0 0 6px; }
+  input[type="password"] {
+    display: block; width: 100%; min-height: 48px; padding: 12px 14px;
+    border: 1px solid var(--line-strong); border-radius: 4px; outline: none;
+    background: var(--bg-2); color: var(--text); font: 16px var(--font);
+    transition: border-color 0.15s ease;
+  }
+  input[type="password"]:focus { border-color: var(--red); }
+  input[aria-invalid="true"] { border-color: var(--warn); }
+  .error { color: var(--warn); font-size: 13px; margin: 8px 0 0; }
+  .remember { display: flex; align-items: center; gap: 10px; margin: 16px 0 0; font-size: 14px; color: var(--muted); cursor: pointer; }
+  .remember input { width: 18px; height: 18px; margin: 0; accent-color: var(--red); cursor: pointer; }
+  button {
+    width: 100%; min-height: 46px; margin-top: 18px; border: 0; border-radius: 4px;
+    background: var(--red); color: #fff; font: 600 15px var(--font); cursor: pointer;
+    transition: background 0.15s ease, transform 0.12s ease;
+  }
+  button:hover { background: var(--red-hover); }
+  button:active { transform: scale(0.985); }
+  input:focus-visible, button:focus-visible { outline: none; box-shadow: var(--focus); }
+  .foot { border-top: 1px solid var(--line); margin-top: 28px; padding-top: 16px; font-size: 12.5px; color: var(--dim); text-align: center; line-height: 1.5; }
 </style>
 </head>
 <body>
-<form method="post" action="/login" {% if error %}class="invalid"{% endif %}>
-<label class="sr-only" for="password">Password</label>
-<input id="password" name="password" type="password" autocomplete="off" maxlength="256" required autofocus {% if error %}aria-invalid="true" aria-describedby="error"{% endif %}>
-{% if error %}<span class="sr-only" id="error" role="alert">{{ error }}</span>{% endif %}
-<button type="submit" aria-label="Continue"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg></button>
-</form>
+<main>
+  <div class="brand">
+    <img src="data:image/png;base64,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" alt="" width="56" height="56">
+    <h1>Brentwood Assistant</h1>
+    <p class="lead">Enter the school password to continue.</p>
+  </div>
+  <form method="post" action="/login" novalidate>
+    <label class="field" for="password">Password</label>
+    <input id="password" name="password" type="password" autocomplete="current-password" maxlength="256" required autofocus {% if error %}aria-invalid="true" aria-describedby="error"{% endif %}>
+    {% if error %}<p class="error" id="error" role="alert">{{ error }}</p>{% endif %}
+    <label class="remember"><input type="checkbox" name="remember" value="1"> Remember this browser for 30 days</label>
+    <button type="submit">Continue</button>
+  </form>
+  <p class="foot">For Brentwood students and staff. Meals, timetables, clubs and the rest of school life.</p>
+</main>
 </body>
 </html>

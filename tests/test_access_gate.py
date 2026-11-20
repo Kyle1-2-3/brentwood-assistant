@@ -85,3 +85,38 @@ def test_each_visit_requires_password_and_entry_cannot_replay(gated):
     client.post("/login", data={"password": "test-pass"})
     assert client.get("/").status_code == 200
     assert client.get("/").status_code == 303
+
+
+def test_remember_me_keeps_browser_signed_in(gated, monkeypatch):
+    app, client, _ = gated
+    response = client.post("/login", data={"password": "test-pass", "remember": "1"})
+    cookies = response.headers.getlist("Set-Cookie")
+    assert any(COOKIE in value and "Max-Age=2592000" in value for value in cookies)
+    assert not any(ENTRY_COOKIE in value for value in cookies)
+    # Refreshes, revisits and the API all work without typing the password again.
+    for _ in range(3):
+        assert client.get("/").status_code == 200
+    assert client.post("/chat").status_code == 200
+    # Still expires, and still dies with a password change.
+    import itsdangerous.timed
+    with monkeypatch.context() as patch:
+        patch.setattr(itsdangerous.timed.time, "time", lambda: 4000000000)
+        assert client.get("/").status_code == 303
+    app.config["SITE_PASSWORD_HASH"] = generate_password_hash("changed")
+    assert client.get("/").status_code == 303
+
+
+def test_unchecked_remember_still_requires_password_each_visit(gated):
+    _, client, _ = gated
+    client.post("/login", data={"password": "test-pass", "remember": ""})
+    assert client.get("/").status_code == 200
+    assert client.get("/").status_code == 303
+
+
+def test_login_page_explains_itself(gated):
+    _, client, _ = gated
+    page = client.get("/login").data.decode()
+    assert "Brentwood Assistant" in page and "school password" in page
+    assert 'name="remember"' in page
+    failed = client.post("/login", data={"password": "wrong"}).data.decode()
+    assert "Incorrect password" in failed
